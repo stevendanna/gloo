@@ -114,7 +114,7 @@ message Settings {
         string root_key = 9;
     }
 
-    // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html) as storage for config data.
+    // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
     // Configuration options for connecting to Consul can be configured in the Settings' root
     // `consul` field
     message ConsulKv {
@@ -265,7 +265,7 @@ message Settings {
             // this is an additional number of allowed, to allow for short bursts.
             uint32 burst = 2;
         }
-        // Rate limits for the kuberentes clients
+        // Rate limits for the kubernetes clients
         RateLimits rate_limits = 1;
     }
 
@@ -332,7 +332,8 @@ message GlooOptions {
 
         // if set to `true`, Gloo removes any routes from the provided configuration
         // which point to a missing destination. Routes that are removed in this way
-        // will instead return a configurable direct response to clients.
+        // will instead return a configurable direct response to clients. When routes are replaced,
+        // Gloo will configure Envoy with a special listener which serves direct responses.
         //
         // Note: enabling this option allows Gloo to accept partially valid proxy configurations
         bool replace_invalid_routes = 1;
@@ -348,6 +349,12 @@ message GlooOptions {
 
     // set these options to fine-tune the way Gloo handles invalid user configuration
     InvalidConfigPolicy invalid_config_policy = 6;
+
+    // Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature,
+    // Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them.
+    // If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result
+    // in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off.
+    bool disable_kubernetes_destinations = 7;
 }
 
 // Settings specific to the Gateway controller

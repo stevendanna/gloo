@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 
@@ -152,7 +153,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
-		//give discovery time to write the upstream
+		// give discovery time to write the upstream
 		Eventually(func() error {
 			upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 			if err != nil {
@@ -409,7 +410,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("appends linkerd headers when linkerd is enabled", func() {
 				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
 				var ref core.ResourceRef
-				//give discovery time to write the upstream
+				// give discovery time to write the upstream
 				Eventually(func() error {
 					upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 					if err != nil {
@@ -465,9 +466,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					}, nil)))
 				inValid := withName(invalidVsName, withDomains([]string{"invalid.com"},
 					getVirtualServiceWithRoute(&gatewayv1.Route{
-						Matchers: []*gloov1.Matcher{{}},
+						Matchers: []*matchers.Matcher{{}},
 						RoutePlugins: &gloov1.RoutePlugins{
-							PrefixRewrite: "matcher and action are missing",
+							PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
 						},
 					}, nil)))
 
@@ -566,6 +567,77 @@ var _ = Describe("Kube2e: gateway", func() {
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+			})
+		})
+
+		Context("with a mix of valid and invalid routes on a single virtual service", func() {
+			var vs *gatewayv1.VirtualService
+			BeforeEach(func() {
+
+				UpdateSettings(func(settings *gloov1.Settings) {
+					Expect(settings.Gloo).NotTo(BeNil())
+					Expect(settings.Gloo.InvalidConfigPolicy).NotTo(BeNil())
+					settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = true
+				})
+
+				vs = withRoute(&gatewayv1.Route{
+					Matchers: []*matchers.Matcher{{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/invalid-route"}}},
+					Action: &gatewayv1.Route_RouteAction{RouteAction: &gloov1.RouteAction{
+						Destination: &gloov1.RouteAction_Single{Single: &gloov1.Destination{
+							DestinationType: &gloov1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Namespace: testHelper.InstallNamespace,
+									Name:      "does-not-exist",
+								},
+							},
+						}},
+					}},
+				}, getVirtualService(&gloov1.Destination{
+					DestinationType: &gloov1.Destination_Upstream{
+						Upstream: &core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+						},
+					},
+				}, nil))
+
+				Eventually(func() error {
+					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
+					return err
+				}, time.Second*10).ShouldNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				_ = virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{})
+
+				UpdateSettings(func(settings *gloov1.Settings) {
+					Expect(settings.Gloo).NotTo(BeNil())
+					Expect(settings.Gloo.InvalidConfigPolicy).NotTo(BeNil())
+					settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = false
+				})
+
+			})
+			It("serves a direct response for the invalid route response", func() {
+				// the valid route should work
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+
+				// the invalid route should respond with the direct response
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/invalid-route",
+					Method:            "GET",
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+				}, "Gloo Gateway has invalid configuration", 1, 60*time.Second, 1*time.Second)
 			})
 		})
 	})
@@ -1014,8 +1086,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Domains: []string{"*"},
 					Routes: []*gatewayv1.Route{
 						{
-							Matchers: []*gloov1.Matcher{{
-								PathSpecifier: &gloov1.Matcher_Prefix{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/red",
 								},
 							}},
@@ -1243,6 +1315,11 @@ func withDomains(domains []string, vs *gatewayv1.VirtualService) *gatewayv1.Virt
 	return vs
 }
 
+func withRoute(route *gatewayv1.Route, vs *gatewayv1.VirtualService) *gatewayv1.VirtualService {
+	vs.VirtualHost.Routes = append([]*gatewayv1.Route{route}, vs.VirtualHost.Routes...)
+	return vs
+}
+
 func getVirtualService(dest *gloov1.Destination, sslConfig *gloov1.SslConfig) *gatewayv1.VirtualService {
 	return getVirtualServiceWithRoute(getRouteWithDest(dest, "/"), sslConfig)
 }
@@ -1274,8 +1351,8 @@ func getRouteTable(name string, route *gatewayv1.Route) *gatewayv1.RouteTable {
 
 func getRouteWithDest(dest *gloov1.Destination, path string) *gatewayv1.Route {
 	return &gatewayv1.Route{
-		Matchers: []*gloov1.Matcher{{
-			PathSpecifier: &gloov1.Matcher_Prefix{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: path,
 			},
 		}},
@@ -1291,8 +1368,8 @@ func getRouteWithDest(dest *gloov1.Destination, path string) *gatewayv1.Route {
 
 func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 	return &gatewayv1.Route{
-		Matchers: []*gloov1.Matcher{{
-			PathSpecifier: &gloov1.Matcher_Prefix{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: path,
 			},
 		}},

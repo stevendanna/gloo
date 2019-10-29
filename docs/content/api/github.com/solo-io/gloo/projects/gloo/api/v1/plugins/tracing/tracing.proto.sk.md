@@ -29,8 +29,8 @@ weight: 5
 
  
 Contains settings for configuring Envoy's tracing capabilities at the listener level.
-See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/v1.11.2/intro/arch_overview/observability/tracing.html
-See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/observability/tracing/
+See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
+See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing
 
 ```yaml
 "requestHeadersForTags": []string
@@ -43,7 +43,7 @@ See here for additional information about configuring tracing with Gloo: https:/
 | ----- | ---- | ----------- |----------- | 
 | `requestHeadersForTags` | `[]string` | Optional. If specified, Envoy will include the headers and header values for any matching request headers. |  |
 | `verbose` | `bool` | Optional. If true, Envoy will include logs for streaming events. Default: false. |  |
-| `tracePercentages` | [.tracing.plugins.gloo.solo.io.TracePercentages](../tracing.proto.sk#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |  |
+| `tracePercentages` | [.tracing.plugins.gloo.solo.io.TracePercentages](../tracing.proto.sk/#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |  |
 
 
 
@@ -54,8 +54,8 @@ See here for additional information about configuring tracing with Gloo: https:/
  
 Contains settings for configuring Envoy's tracing capabilities at the route level.
 Note: must also specify ListenerTracingSettings for the associated listener.
-See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/v1.11.2/intro/arch_overview/observability/tracing.html
-See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/observability/tracing/
+See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
+See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing
 
 ```yaml
 "routeDescriptor": string
@@ -66,7 +66,7 @@ See here for additional information about configuring tracing with Gloo: https:/
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `routeDescriptor` | `string` | Optional. If set, will be used to identify the route that produced the trace. Note that this value will be overridden if the "x-envoy-decorator-operation" header is passed. |  |
-| `tracePercentages` | [.tracing.plugins.gloo.solo.io.TracePercentages](../tracing.proto.sk#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |  |
+| `tracePercentages` | [.tracing.plugins.gloo.solo.io.TracePercentages](../tracing.proto.sk/#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |  |
 
 
 
