@@ -43,9 +43,9 @@ site-test: site-common
 # Difference from active development branch: does not produce "latest" form of docs
 .PHONY: site-release
 site-release: site-common
-	# go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
-	# hugo --config docs.toml
-	# mv site site-latest
+	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
+	hugo --config docs.toml
+	mv site site-latest
 	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION)
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	# (if it passes here, it will pass on the subsequent generation so no need to check both hugo calls)
@@ -87,12 +87,12 @@ SERVE_AS_LATEST_TAG:=$(VERSION)-latest
 # Difference from active development branch: does not produce "latest" form of docs
 .PHONY: docker-push-docs
 docker-push-docs: site-release manifest
-	# docker build \
-	# 	--build-arg VERSION=latest \
-	# 	--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
-	# 	--build-arg FROM_DIR=./site-latest \
-	# 	-t $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG) .
-	# docker push $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG)
+	docker build \
+		--build-arg VERSION=latest \
+		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
+		--build-arg FROM_DIR=./site-latest \
+		-t $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG) .
+	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG)
 	docker build \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
@@ -108,8 +108,8 @@ manifest:
 		--set image.tag=$(VERSION) \
 		--set image.repository=$(IMAGE_REPO) \
 		> install/manifest-versioned.yaml
-	# helm template install/helm \
-	# 	--set docsVersion=latest \
-	# 	--set image.tag=$(SERVE_AS_LATEST_TAG) \
-	# 	--set image.repository=$(IMAGE_REPO) \
-	# 	> install/manifest-latest.yaml
+	helm template install/helm \
+		--set docsVersion=latest \
+		--set image.tag=$(SERVE_AS_LATEST_TAG) \
+		--set image.repository=$(IMAGE_REPO) \
+		> install/manifest-latest.yaml
