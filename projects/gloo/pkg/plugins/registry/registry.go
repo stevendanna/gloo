@@ -30,6 +30,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamssl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 )
 
 type registry struct {
@@ -42,6 +43,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 	reg := &registry{}
 	// plugins should be added here
 	reg.plugins = append(reg.plugins,
+		wasm.NewPlugin(),
 		loadbalancer.NewPlugin(),
 		upstreamconn.NewPlugin(),
 		upstreamssl.NewPlugin(),
