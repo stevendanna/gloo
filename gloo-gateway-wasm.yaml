@@ -120,7 +120,6 @@ data:
                   socket_address:
                     address: gloo.gloo-system.svc.cluster.local
                     port_value: 9979
-        http2_protocol_options: {}
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
@@ -750,6 +749,9 @@ spec:
     protocol: TCP
   - name: metrics-grpc
     port: 9966
+    protocol: TCP
+  - name: wasm-cache
+    port: 9979
     protocol: TCP
   selector:
     gloo: gloo

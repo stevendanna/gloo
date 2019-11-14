@@ -42,7 +42,7 @@ func (p *Plugin) plugin(pc *PluginSource) (*plugins.StagedHttpFilter, error) {
 		return nil, err
 	}
 
-	filterCfg := &WasmService{
+	filterCfg := &Wasm{
 		Config: &PluginConfig{
 			Name:          pc.Name,
 			RootId:        pc.RootId,
