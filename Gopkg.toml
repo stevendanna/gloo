@@ -46,6 +46,10 @@
   name = "github.com/onsi/gomega"
   version = "1.5.0"
 
+[[constraint]]
+  name = "github.com/solo-io/extend-envoy"
+  revision = "19663fb15a7c047c408d5037688424a0a93a8a4d"
+
 # make sure all kubernetes code is the same version.
 # when updating, update all in the same time.
 
@@ -103,3 +107,11 @@
   name = "k8s.io/klog"
   revision = "9cbb78b20423182f9e5b2a214dd255f5e117d2d1"
   source = "github.com/stefanprodan/klog"
+
+[[override]]
+  name = "github.com/docker/distribution"
+  version = "v2.6.2"
+
+[[override]]
+  name = "github.com/docker/docker"
+  revision = "38ab9da0030917f154f4d1b05962d48de149d47c"
