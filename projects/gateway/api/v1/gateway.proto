@@ -78,14 +78,22 @@ message Gateway {
 }
 
 message HttpGateway {
-    // names of the the virtual services, which contain the actual routes for the gateway
-    // if the list is empty, all virtual services in the same namespace as this gateway will apply (with accordance to tls flag above).
+    // Names of the the virtual services, which contain the actual routes for the gateway.
+    // If the list is empty, all virtual services in the same namespace as this gateway will apply (with accordance to tls flag above).
+    // Will be ignored for a given Virtual Service if both the Gateway and the Virtual Service have the same
+    // SSL-enabled status and `readAllVirtualServices` is set to `true`.
     repeated core.solo.io.ResourceRef virtual_services = 1 [(gogoproto.nullable) = false];
 
     // Select virtual services by their label. This will apply only to virtual services
     // in the same namespace as the gateway resource.
-    // only one of `virtualServices` or `virtualServiceSelector` should be provided
+    // only one of `virtualServices` or `virtualServiceSelector` should be provided.
+    // Will be ignored for a given Virtual Service if both the Gateway and the Virtual Service have the same
+    // SSL-enabled status and `readAllVirtualServices` is set to `true`.
     map<string, string> virtual_service_selector = 2 ;
+
+    // If true, override both `virtualServices` and `virtualServiceSelector` and read all Virtual Services from all
+    // watched namespaces whose SSL-enabled status matches this Gateway. Defaults to `false`.
+    bool read_all_virtual_services = 3;
 
     // http gateway configuration
     gloo.solo.io.HttpListenerOptions options = 8;

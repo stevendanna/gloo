@@ -401,14 +401,15 @@ var _ = Describe("Translator", func() {
 				Expect(proxy.Listeners[0].SslConfigurations).To(BeEmpty())
 			})
 
-			Context("with VirtualServices (refs)", func() {
-				It("should translate a gateway to only have its virtual services", func() {
+			Context("with VirtualServices", func() {
+				BeforeEach(func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
 							VirtualServices: []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
 						},
 					}
-
+				})
+				It("should translate a gateway to only have its virtual services", func() {
 					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
@@ -433,6 +434,26 @@ var _ = Describe("Translator", func() {
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 					Expect(listener.VirtualHosts).To(HaveLen(1))
 					Expect(listener.VirtualHosts[0].Domains).To(Equal(snap.VirtualServices[2].VirtualHost.Domains))
+				})
+
+				Context("when the Gateway is configured to read all virtual services in all watched namespaces", func() {
+					BeforeEach(func() {
+						snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
+							HttpGateway: &v1.HttpGateway{
+								ReadAllVirtualServices: true,
+							},
+						}
+					})
+
+					It("can read all virtual services in all watched namespaces", func() {
+						proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+						Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+						Expect(proxy).NotTo(BeNil())
+						Expect(proxy.Listeners).To(HaveLen(1))
+						listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+						Expect(listener.VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
+					})
 				})
 			})
 

@@ -164,6 +164,10 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 		return false
 	}
 
+	if httpGateway.ReadAllVirtualServices {
+		return true
+	}
+
 	if len(httpGateway.VirtualServiceSelector) > 0 {
 		// select virtual services by the label selector
 		// must be in the same namespace as the Gateway
