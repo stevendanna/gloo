@@ -15,8 +15,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-// deprecated, use defaults.GatewayProxyName
-const GatewayProxyName = defaults.GatewayProxyName
+const (
+	// deprecated, use defaults.GatewayProxyName
+	GatewayProxyName = defaults.GatewayProxyName
+
+	ReadAllVirtualServiceMisconfiguration = "gateway is configured to both read all virtual services and read specific virtual services"
+)
 
 type ListenerFactory interface {
 	GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener
@@ -99,6 +103,9 @@ func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualService
 				if _, err := virtualServices.Find(vs.Strings()); err != nil {
 					reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
 				}
+			}
+			if httpGw.ReadAllVirtualServices && (len(httpGw.VirtualServices) != 0 || len(httpGw.VirtualServiceSelector) != 0) {
+				reports.AddWarning(gw, ReadAllVirtualServiceMisconfiguration)
 			}
 		}
 	}

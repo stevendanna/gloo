@@ -454,6 +454,23 @@ var _ = Describe("Translator", func() {
 						listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 						Expect(listener.VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
 					})
+
+					It("warns if both ReadAllVirtualServices is set to true and virtual services are explicitly specified", func() {
+						// we have already set ReadAllVirtualServices - now we also explicitly reference a virtual service
+						snap.Gateways[0].GetHttpGateway().VirtualServices = []core.ResourceRef{{Name: "name1", Namespace: ns}}
+						proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+						Expect(errs.Validate()).NotTo(HaveOccurred(), "No errors should have occurred")
+						strictErrs := errs.ValidateStrict()
+						Expect(strictErrs).To(HaveOccurred(), "A warning should be reported")
+						Expect(strictErrs.Error()).To(ContainSubstring(ReadAllVirtualServiceMisconfiguration))
+
+						// the proxy should still be configured correctly despite the warning
+						Expect(proxy).NotTo(BeNil())
+						Expect(proxy.Listeners).To(HaveLen(1))
+						listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+						Expect(listener.VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
+					})
 				})
 			})
 
