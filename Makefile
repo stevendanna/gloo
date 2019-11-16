@@ -420,6 +420,7 @@ ASSETS_ONLY := true
 upload-github-release-assets: build-cli render-yaml
 	go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
 
+# NOTE this is the ci entrypoint but you can skip this and just run from the docs directory for now
 .PHONY: publish-docs
 publish-docs: prepare-helm
 ifeq ($(RELEASE),"true")
