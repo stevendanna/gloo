@@ -21,7 +21,7 @@ type Config struct {
 	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
 	K8s            *K8s                    `json:"k8s,omitempty"`
 	AccessLogger   *AccessLogger           `json:"accessLogger,omitempty"`
-	InstallConfig  *InstallConfig          `json:"installConfig"`
+	InstallConfig  *InstallConfig          `json:"installConfig,omitempty"`
 }
 
 type InstallConfig struct {
