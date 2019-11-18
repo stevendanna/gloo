@@ -5,7 +5,7 @@ changelog:
       gets *copied* between a chart and its subchart, so the mutation that's necessary to guarantee uniqueness of
       the installationId isn't respected between the two charts.
     issueLink: https://github.com/solo-io/gloo/issues/1635
-  - type: Helm
+  - type: HELM
     description: >
       Move installationId Helm value out of `globals`. This is necessary because of the fact that the `globals` map
       gets *copied* between a chart and its subchart, so the mutation that's necessary to guarantee uniqueness of
