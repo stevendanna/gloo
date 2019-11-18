@@ -7,7 +7,7 @@ metadata:
     "helm.sh/hook": crd-install
   labels:
     gloo: settings
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
 spec:
   group: gloo.solo.io
   names:
@@ -30,7 +30,7 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
 spec:
   group: gateway.solo.io
   names:
@@ -54,7 +54,7 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
 spec:
   group: gateway.solo.io
   names:
@@ -78,7 +78,7 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
 spec:
   group: gateway.solo.io
   names:
@@ -102,7 +102,7 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
 spec:
   group: gloo.solo.io
   names:
@@ -126,7 +126,7 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
 spec:
   group: gloo.solo.io
   names:
@@ -150,7 +150,7 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
 spec:
   group: gloo.solo.io
   names:
@@ -174,7 +174,7 @@ metadata:
   annotations:
     "helm.sh/hook": crd-install
   labels:
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
 spec:
   group: enterprise.gloo.solo.io
   names:

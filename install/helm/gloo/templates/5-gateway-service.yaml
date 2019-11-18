@@ -6,7 +6,7 @@ metadata:
     discovery.solo.io/function_discovery: disabled
     app: gloo
     gloo: gateway
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
   name: gateway
   namespace: {{ .Release.Namespace }}
 spec:

@@ -43,3 +43,5 @@ global:
     pullPolicy: IfNotPresent
   glooRbac:
     create: true
+
+installConfig: {}

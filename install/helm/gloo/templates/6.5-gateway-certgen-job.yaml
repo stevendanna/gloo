@@ -11,7 +11,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway-certgen
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
   name: gateway-certgen
   namespace: {{ .Release.Namespace }}
   annotations:

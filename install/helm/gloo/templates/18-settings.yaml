@@ -5,7 +5,7 @@ kind: Settings
 metadata:
   labels:
     app: gloo
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
   name: default
   namespace: {{ .Release.Namespace }}
   annotations:

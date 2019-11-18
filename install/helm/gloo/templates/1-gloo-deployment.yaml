@@ -8,7 +8,7 @@ metadata:
   labels:
     app: gloo
     gloo: gloo
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
   name: gloo
   namespace: {{ .Release.Namespace }}
 spec:

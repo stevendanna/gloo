@@ -28,10 +28,11 @@ Expand the name of a container image
 {{- end -}}
 
 {{/* This value makes its way into k8s labels, so if the implementation changes,
-     make sure it's compatible with label values */}}
+     make sure it's compatible with label values. Expects its root context to
+     have an "installationId" key that will be unique through the installation. */}}
 {{- define "gloo.installationId" -}}
-{{- if not .Values.global.glooInstallationId -}}
-{{- $_ := set .Values.global "glooInstallationId" (randAlphaNum 20) -}}
+{{- if not .installationId -}}
+{{- $_ := set . "installationId" (randAlphaNum 20) -}}
 {{- end -}}
-{{ .Values.global.glooInstallationId }}
+{{ .installationId }}
 {{- end -}}

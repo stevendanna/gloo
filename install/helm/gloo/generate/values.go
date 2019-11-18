@@ -21,13 +21,17 @@ type Config struct {
 	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
 	K8s            *K8s                    `json:"k8s,omitempty"`
 	AccessLogger   *AccessLogger           `json:"accessLogger,omitempty"`
+	InstallConfig  *InstallConfig          `json:"installConfig"`
+}
+
+type InstallConfig struct {
+	InstallationId string `json:"installationId" desc:"If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling"`
 }
 
 type Global struct {
-	Image              *Image      `json:"image,omitempty"`
-	Extensions         interface{} `json:"extensions,omitempty"`
-	GlooRbac           *Rbac       `json:"glooRbac,omitempty"`
-	GlooInstallationId string      `json:"glooInstallationId" desc:"If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling"`
+	Image      *Image      `json:"image,omitempty"`
+	Extensions interface{} `json:"extensions,omitempty"`
+	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
 }
 
 type Namespace struct {

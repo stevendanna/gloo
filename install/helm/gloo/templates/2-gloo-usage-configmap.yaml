@@ -7,5 +7,5 @@ metadata:
   labels:
     app: gloo
     gloo: gloo-usage
-    installationId: {{ include "gloo.installationId" . }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
 data:

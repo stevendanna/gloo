@@ -9,7 +9,7 @@ metadata:
   labels:
     app: gloo
     gloo: ingress
-    installationId: {{ include "gloo.installationId" $ }}
+    installationId: {{ include "gloo.installationId" .Values.installConfig }}
   name: ingress
   namespace: {{ .Release.Namespace }}
 spec:
