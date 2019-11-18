@@ -1,5 +1,4 @@
 {{- if .Values.gateway.enabled }}
-{{- $installConfig := .Values.installConfig }}
 {{- range $name, $spec := .Values.gatewayProxies }}
 ---
 # config_map
@@ -12,7 +11,7 @@ metadata:
     app: gloo
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
-    installationId: {{ include "gloo.installationId" $installConfig }}
+    installationId: {{ include "gloo.installationId" $.Values.installConfig }}
 data:
 {{ if (empty $spec.configMap.data) }}
   envoy.yaml: |

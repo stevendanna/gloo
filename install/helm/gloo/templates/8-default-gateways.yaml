@@ -1,4 +1,3 @@
-{{- $installConfig := .Values.installConfig }}
 {{- range $name, $spec := .Values.gatewayProxies }}
 {{- if $spec.gatewaySettings}}
 {{$gatewaySettings := $spec.gatewaySettings}}
@@ -12,7 +11,7 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
-    installationId: {{ include "gloo.installationId" $installConfig }}
+    installationId: {{ include "gloo.installationId" $.Values.installConfig }}
   annotations:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-weight": "5"
@@ -39,7 +38,7 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
-    installationId: {{ include "gloo.installationId" $installConfig }}
+    installationId: {{ include "gloo.installationId" $.Values.installConfig }}
   annotations:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-weight": "5"
