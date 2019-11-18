@@ -164,8 +164,8 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 		return false
 	}
 
-	if httpGateway.ReadAllVirtualServices {
-		return true
+	if !VirtualServiceNamespaceContainedInGateway(httpGateway, virtualService.Metadata.GetNamespace()) {
+		return false
 	}
 
 	if len(httpGateway.VirtualServiceSelector) > 0 {
@@ -176,21 +176,34 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 		vsLabels := labels.Set(virtualService.Metadata.Labels)
 
 		// must match both labels and namespace
-		return virtualService.Metadata.Namespace == gateway.Metadata.Namespace && selector.Matches(vsLabels)
+		return selector.Matches(vsLabels)
 	}
 	// use individual refs to collect virtual services
 	virtualServiceRefs := httpGateway.VirtualServices
 
 	if len(virtualServiceRefs) == 0 {
-		// accept only virtual services in the same namespace as the gateway
-		// https://github.com/solo-io/gloo/issues/1142
-		return gateway.Metadata.Namespace == virtualService.Metadata.Namespace
+		// accept all virtual services in the namespaces indicated by the selectFromNamespaces field (filtered for above)
+		return true
 	}
 
 	vsRef := virtualService.Metadata.Ref()
 
 	for _, ref := range virtualServiceRefs {
 		if ref == vsRef {
+			return true
+		}
+	}
+
+	return false
+}
+
+func VirtualServiceNamespaceContainedInGateway(httpGateway *v1.HttpGateway, vsNamespace string) bool {
+	if len(httpGateway.SelectFromNamespaces) == 0 {
+		return true
+	}
+
+	for _, ns := range httpGateway.SelectFromNamespaces {
+		if ns == vsNamespace {
 			return true
 		}
 	}

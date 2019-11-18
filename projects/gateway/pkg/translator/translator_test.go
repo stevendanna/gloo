@@ -42,14 +42,18 @@ var _ = Describe("Translator", func() {
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
 						GatewayType: &v1.Gateway_HttpGateway{
-							HttpGateway: &v1.HttpGateway{},
+							HttpGateway: &v1.HttpGateway{
+								SelectFromNamespaces: []string{ns},
+							},
 						},
 						BindPort: 2,
 					},
 					{
 						Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
 						GatewayType: &v1.Gateway_HttpGateway{
-							HttpGateway: &v1.HttpGateway{},
+							HttpGateway: &v1.HttpGateway{
+								SelectFromNamespaces: []string{ns2},
+							},
 						},
 						BindPort: 2,
 					},
@@ -291,14 +295,18 @@ var _ = Describe("Translator", func() {
 						{
 							Metadata: core.Metadata{Namespace: ns, Name: "name"},
 							GatewayType: &v1.Gateway_HttpGateway{
-								HttpGateway: &v1.HttpGateway{},
+								HttpGateway: &v1.HttpGateway{
+									SelectFromNamespaces: []string{ns},
+								},
 							},
 							BindPort: 2,
 						},
 						{
 							Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
 							GatewayType: &v1.Gateway_HttpGateway{
-								HttpGateway: &v1.HttpGateway{},
+								HttpGateway: &v1.HttpGateway{
+									SelectFromNamespaces: []string{ns},
+								},
 							},
 							BindPort: 2,
 						},
@@ -405,7 +413,8 @@ var _ = Describe("Translator", func() {
 				BeforeEach(func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
-							VirtualServices: []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
+							VirtualServices:      []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
+							SelectFromNamespaces: []string{ns},
 						},
 					}
 				})
@@ -436,11 +445,20 @@ var _ = Describe("Translator", func() {
 					Expect(listener.VirtualHosts[0].Domains).To(Equal(snap.VirtualServices[2].VirtualHost.Domains))
 				})
 
+				It("errors if a virtual service is specified outside of selectFromNamespaces", func() {
+					badVsRef := snap.VirtualServices[2].Metadata.Ref()
+					snap.Gateways[0].GetHttpGateway().VirtualServices = []core.ResourceRef{badVsRef}
+					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+					Expect(errs.Validate()).To(HaveOccurred(), "The translation should have failed")
+					Expect(errs.Validate().Error()).To(ContainSubstring(VirtualServiceInWrongNamespace(badVsRef.Name, badVsRef.Namespace, snap.Gateways[0].GetHttpGateway().SelectFromNamespaces).Error()))
+				})
+
 				Context("when the Gateway is configured to read all virtual services in all watched namespaces", func() {
 					BeforeEach(func() {
 						snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 							HttpGateway: &v1.HttpGateway{
-								ReadAllVirtualServices: true,
+								SelectFromNamespaces: []string{}, // empty should mean all virtual services
 							},
 						}
 					})
@@ -454,23 +472,6 @@ var _ = Describe("Translator", func() {
 						listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 						Expect(listener.VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
 					})
-
-					It("warns if both ReadAllVirtualServices is set to true and virtual services are explicitly specified", func() {
-						// we have already set ReadAllVirtualServices - now we also explicitly reference a virtual service
-						snap.Gateways[0].GetHttpGateway().VirtualServices = []core.ResourceRef{{Name: "name1", Namespace: ns}}
-						proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-
-						Expect(errs.Validate()).NotTo(HaveOccurred(), "No errors should have occurred")
-						strictErrs := errs.ValidateStrict()
-						Expect(strictErrs).To(HaveOccurred(), "A warning should be reported")
-						Expect(strictErrs.Error()).To(ContainSubstring(ReadAllVirtualServiceMisconfiguration))
-
-						// the proxy should still be configured correctly despite the warning
-						Expect(proxy).NotTo(BeNil())
-						Expect(proxy.Listeners).To(HaveLen(1))
-						listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-						Expect(listener.VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
-					})
 				})
 			})
 
@@ -479,6 +480,7 @@ var _ = Describe("Translator", func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
 							VirtualServiceSelector: labelSet,
+							SelectFromNamespaces:   []string{ns},
 						},
 					}
 

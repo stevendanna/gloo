@@ -2,10 +2,8 @@ changelog:
   - type: FIX
     description: >
       Issue #1142 was completed without providing an escape hatch to return to the old behavior. Add a field
-      `readAllVirtualServices` on the HttpGateway proto message to allow reading all virtual services from
-      all watched namespaces. The ways to link a virtual service to a Gateway are now: 1) provide a selector
-      to find virtual services in the same namespace as the Gateway controller with the given labels, or
-      2) explicitly specify Virtual Services by providing a list of resource refs, or 3) set
-      `readAllVirtualServices` to true, in which case all Virtual Services in all watched namespaces will be
-      read.
+      `selectFromNamespaces` on the HttpGateway proto message to specify which of the watched namespaces to
+      read Virtual Services from. The field defaults to empty, in which case the behavior is to process
+      VirtualServices from all watched namespaces. It is an error to provide a Virtual Service ref
+      in the `virtualServices` field with a namespace not included in Gloo's watch namespaces.
     issueLink: https://github.com/solo-io/gloo/issues/1716
