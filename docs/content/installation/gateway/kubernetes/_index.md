@@ -24,7 +24,6 @@ For certain providers with more strict multi-tenant security, like OpenShift, be
 Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Gateway to the `gloo-system` namespace:
 
 ```bash
-kubectl create namespace gloo-system
 glooctl install gateway
 ```
 
