@@ -373,7 +373,7 @@ update-helm-chart:
 	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
 	helm repo index $(HELM_SYNC_DIR)
 
-HELMFLAGS ?= --namespace $(INSTALL_NAMESPACE) --set namespace.create=true
+HELMFLAGS ?= --namespace $(INSTALL_NAMESPACE) --set namespace.create=true --set crds.create=true
 
 MANIFEST_OUTPUT = > /dev/null
 ifneq ($(BUILD_ID),)
