@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/go-utils/protoutils"
 )
 
@@ -36,11 +37,17 @@ var _ = Describe("SnapshotBenchmark", func() {
 	})
 	Measure("it should do something hard efficiently", func(b Benchmarker) {
 		const times = 1
+
 		runtime1 := b.Time(fmt.Sprintf("runtime of %d reflect-based hash calls", times), func() {
 			for i := 0; i < times; i++ {
 				for _, us := range allUpstreams {
 					us.Hash()
 				}
+			}
+		})
+		runtime15 := b.Time(fmt.Sprintf("runtime of %d hash-all reflect-based hash calls", times), func() {
+			for i := 0; i < times; i++ {
+				hashutils.HashAll(allUpstreams)
 			}
 		})
 		runtime2 := b.Time(fmt.Sprintf("runtime of %d generated hash calls", times), func() {
@@ -53,6 +60,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 
 		// divide by 1e3 to get time in micro seconds instead of nano seconds
 		b.RecordValue("Runtime per reflection call in µ seconds", float64(int64(runtime1)/times)/1e3)
+		b.RecordValue("Runtime per hash all reflection call in µ seconds", float64(int64(runtime15)/times)/1e3)
 		b.RecordValue("Runtime per generated call in µ seconds", float64(int64(runtime2)/times)/1e3)
 
 	}, 10)
