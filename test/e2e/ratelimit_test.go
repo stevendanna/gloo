@@ -51,11 +51,12 @@ var _ = Describe("Rate Limit", func() {
 		ctx         context.Context
 		testClients services.TestClients
 		cache       memory.InMemoryResourceCache
+		rlPort      uint32
 	)
 
-	const (
-		rlPort = uint32(18081)
-	)
+	BeforeEach(func() {
+		rlPort = uint32(services.NextBindPort())
+	})
 
 	Context("with envoy", func() {
 
