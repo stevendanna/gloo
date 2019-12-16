@@ -46,6 +46,7 @@ type Install struct {
 	DryRun                  bool
 	Upgrade                 bool
 	Namespace               string
+	Release                 string
 	HelmChartOverride       string
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
