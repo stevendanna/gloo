@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/solo-io/gloo/pkg/utils/gomodutils"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
@@ -10,7 +11,7 @@ import (
 //go:generate go run generate.go
 
 func main() {
-	err := version.CheckVersions()
+	err := version.CheckVersions(new(gomodutils.ModParser), gomodutils.GlooVendoredDependencies)
 	if err != nil {
 		log.Fatalf("generate failed!: %s", err.Error())
 	}

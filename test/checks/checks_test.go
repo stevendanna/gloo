@@ -1,12 +1,9 @@
 package checks
 
 import (
-	"io/ioutil"
-	"os/exec"
-	"strings"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/gomodutils"
 	"golang.org/x/mod/modfile"
 )
 
@@ -16,13 +13,8 @@ var _ = Describe("Checks", func() {
 		// regular klog writes to disk, so make sure we used a forked version that doesn't write to
 		// disk, which is a problem with hardened containers with root only file systems.
 
-		gomod, err := exec.Command("go", "env", "GOMOD").CombinedOutput()
-		Expect(err).NotTo(HaveOccurred())
-		gomodfile := strings.TrimSpace(string(gomod))
-		data, err := ioutil.ReadFile(gomodfile)
-		Expect(err).NotTo(HaveOccurred())
-
-		modFile, err := modfile.Parse(gomodfile, data, nil)
+		modParser := &gomodutils.ModParser{}
+		modFile, err := modParser.Parse()
 		Expect(err).NotTo(HaveOccurred())
 
 		var klogReplace *modfile.Replace
