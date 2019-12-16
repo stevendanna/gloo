@@ -29,6 +29,7 @@ glooctl install gateway [flags]
   -i, --interactive           use interactive mode
       --kubeconfig string     kubeconfig to use, if not standard one
   -n, --namespace string      namespace to install gloo into (default "gloo-system")
+      --release string        Version of Gloo to install (defaults to latest)
       --release-name string   helm release name (default "gloo")
   -u, --upgrade               Upgrade an existing v1 gateway installation to use v2 CRDs. Set this when upgrading from v0.17.x or earlier versions of gloo
       --values strings        List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
