@@ -746,7 +746,10 @@
 [[projects]]
   digest = "1:f92fd6e98da2322ddd7f60b9fd647b11bb67c6ab01dfdfb59f8f5ded2e7522d6"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "9fa652df1129bef0e734c9cf9bf6dbae9ef3b9fa"
   version = "1.3.1"
@@ -1790,6 +1793,22 @@
   version = "v0.11.13"
 
 [[projects]]
+  digest = "1:54480bcd69fcd0349be66861194e8d40b9aaf4fced14f9ad1932c585f3ac799c"
+  name = "github.com/solo-io/wasme"
+  packages = [
+    "pkg/auth/store",
+    "pkg/cache",
+    "pkg/consts",
+    "pkg/defaults",
+    "pkg/model",
+    "pkg/pull",
+    "pkg/resolver",
+  ]
+  pruneopts = "UT"
+  revision = "25f66e4c549df2f16605a5a8c23bb01678dc804b"
+  version = "v0.0.8"
+
+[[projects]]
   digest = "1:bb495ec276ab82d3dd08504bbc0594a65de8c3b22c6f2aaa92d05b73fbf3a82e"
   name = "github.com/spf13/afero"
   packages = [
@@ -2030,6 +2049,19 @@
   ]
   pruneopts = "UT"
   revision = "fdd1cda4f05fd1fd86124f0ef9ce31a0b72c8448"
+
+[[projects]]
+  branch = "master"
+  digest = "1:1ec79de2c381494b56be9cb968899e77818957301fe9302ddecb6d6ad5f62748"
+  name = "golang.org/x/mod"
+  packages = [
+    "internal/lazyregexp",
+    "modfile",
+    "module",
+    "semver",
+  ]
+  pruneopts = "UT"
+  revision = "331c550502dddccec70ff032beba72756bb428f2"
 
 [[projects]]
   digest = "1:1b6e369fbcea4e377fbea25aa05bb4a36dbaa24c3796023df40ae77c48ad8853"
@@ -3174,6 +3206,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
@@ -3209,6 +3242,7 @@
     "github.com/onsi/gomega/gexec",
     "github.com/onsi/gomega/gstruct",
     "github.com/onsi/gomega/types",
+    "github.com/opencontainers/go-digest",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/api",
     "github.com/prometheus/client_golang/api/prometheus/v1",
@@ -3282,6 +3316,7 @@
     "github.com/solo-io/solo-kit/pkg/utils/protoutils",
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
+    "github.com/solo-io/wasme/pkg/defaults",
     "github.com/spf13/afero",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
@@ -3294,6 +3329,7 @@
     "go.uber.org/multierr",
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
+    "golang.org/x/mod/modfile",
     "golang.org/x/oauth2/google",
     "golang.org/x/sync/errgroup",
     "google.golang.org/api/compute/v1",

@@ -62,9 +62,7 @@ func changelogMdCmd(opts *options) *cobra.Command {
 		Use:   "gen-changelog-md",
 		Short: "generate a markdown file from changelogs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			return generateChangelogMd(opts, args)
-			return nil
 		},
 	}
 	return app
@@ -149,7 +147,7 @@ func generateChangelogMd(opts *options, args []string) error {
 	case glooDocGen:
 		repoRootPath = ".."
 		repo = "gloo"
-		changelogDirPath = "../changelog"
+		changelogDirPath = changelogutils.ChangelogDirectory
 	case glooEDocGen:
 		// files should already be there because we download them in CI, via `download-glooe-changelog` make target
 		repoRootPath = "../../solo-projects"
