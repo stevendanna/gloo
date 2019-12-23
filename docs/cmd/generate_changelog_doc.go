@@ -15,6 +15,9 @@ import (
 	"github.com/solo-io/go-utils/changelogutils"
 )
 
+// To run, set the following:
+// working directory: docs
+// program arguments (ex): gen-changelog-md gloo
 func main() {
 	ctx := context.Background()
 	app := rootApp(ctx)
@@ -141,18 +144,16 @@ func generateChangelogMd(opts *options, args []string) error {
 		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
 	}
 	target := args[0]
-
-	var repoRootPath, repo, changelogDirPath string
+	changelogDirPath := changelogutils.ChangelogDirectory
+	var repoRootPath, repo string
 	switch target {
 	case glooDocGen:
-		repoRootPath = ".."
+		repoRootPath = ".." // assumes running from "docs" working directory
 		repo = "gloo"
-		changelogDirPath = changelogutils.ChangelogDirectory
 	case glooEDocGen:
 		// files should already be there because we download them in CI, via `download-glooe-changelog` make target
 		repoRootPath = "../../solo-projects"
 		repo = "solo-projects"
-		changelogDirPath = "../../solo-projects/changelog"
 	default:
 		return InvalidInputError(target)
 	}
