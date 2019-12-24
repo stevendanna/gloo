@@ -54,7 +54,7 @@ API Server before it is written to persistent storage.
 Gloo runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
 {{< protobuf name="gateway.solo.io.v2.Gateway" display="Gateways">}}, 
-{{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}}.),
+{{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}},
 and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
 
 The [validating webhook configuration](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
@@ -88,7 +88,7 @@ If using Helm to manage settings, set the following value:
 
 If writing Settings directly to Kubernetes, add the following to the `spec.gateway` block:
 
-{{< highlight yaml "hl_lines=13-15" >}}
+{{< highlight yaml "hl_lines=11-13" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
@@ -122,15 +122,14 @@ metadata:
 spec:
   virtualHost:
     routes:
-      # this route is missing a path specifier and will be rejected
-      - matcher: {}
-        routeAction:
-          single:
-            upstream:
-              name: does-not-exist
-              namespace: anywhere
+    # this route is missing a path specifier and will be rejected
+    - matchers:
+      routeAction:
+        single:
+          upstream:
+            name: does-not-exist
+            namespace: anywhere
 EOF
-
 ```
 
 We should see the request was rejected:
