@@ -881,6 +881,8 @@ github.com/solo-io/go-utils v0.11.6-0.20191223173502-24c971040df6 h1:cSTGL3AkwS+
 github.com/solo-io/go-utils v0.11.6-0.20191223173502-24c971040df6/go.mod h1:D5lbi4EyIMq+T5gzjJacu0Ou4Z1brL7g2YYYYgYBJso=
 github.com/solo-io/go-utils v0.11.6-0.20191223175123-2d98720f2a64 h1:gBwnvAUUVUsV5g0Ua6Kq1BA+DnvuhxSfnzKAJZz2J2g=
 github.com/solo-io/go-utils v0.11.6-0.20191223175123-2d98720f2a64/go.mod h1:D5lbi4EyIMq+T5gzjJacu0Ou4Z1brL7g2YYYYgYBJso=
+github.com/solo-io/go-utils v0.11.7 h1:ID4lnyxqphmwNJm5ruwemj2iFaIZ88HE5/ziF7i4ZM8=
+github.com/solo-io/go-utils v0.11.7/go.mod h1:D5lbi4EyIMq+T5gzjJacu0Ou4Z1brL7g2YYYYgYBJso=
 github.com/solo-io/reporting-client v0.1.2 h1:U585Q5UlB5/UUewtgEAQz94SWuNRBxoHc4tPthhnYko=
 github.com/solo-io/reporting-client v0.1.2/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0FIuvU+NSePj4wJq8=
 github.com/solo-io/solo-kit v0.6.3/go.mod h1:oBaQ6tOwuO97u7w+s3TeI08YLHcbiWemInx0XkDfKFw=
