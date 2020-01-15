@@ -379,7 +379,11 @@ package-chart: generate-helm-files
 	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
 	helm repo index $(HELM_SYNC_DIR)
 
+# When running this on a Mac, make sure your credentials are correct then run
+# DOCKER_CONFIG=~/.docker HELM_REPOSITORY_CACHE=~/Library/Caches/helm/registry make push-chart-to-registry
 push-chart-to-registry: generate-helm-files
+	ls /workspace/docker-config
+	cat /workspace/docker-config/config.json
 	mkdir -p $(HELM_REPOSITORY_CACHE)
 	cp $(DOCKER_CONFIG)/config.json $(HELM_REPOSITORY_CACHE)/config.json
 	HELM_EXPERIMENTAL_OCI=1 helm chart save $(HELM_DIR) gcr.io/solo-public/gloo-helm:$(VERSION)

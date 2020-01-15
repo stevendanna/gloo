@@ -163,13 +163,13 @@ steps:
   id: 'docker-push'
 # 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
 # isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
-- name: gcr.io/cloud-builders/gcloud
-  args: ['auth', 'configure-docker']
-  env:
-    - 'DOCKER_CONFIG=/workspace/docker-config'
-  dir: *dir
-  waitFor: ['compile']
-  id: 'gcr-auth'
+#- name: gcr.io/cloud-builders/gcloud
+#  args: ['auth', 'configure-docker']
+#  env:
+#    - 'DOCKER_CONFIG=/workspace/docker-config'
+#  dir: *dir
+#  waitFor: ['compile']
+#  id: 'gcr-auth'
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['package-chart', 'render-manifests', 'upload-github-release-assets', 'download-glooe-changelog', 'publish-docs', 'push-chart-to-registry', '-B']
   env:
@@ -180,7 +180,7 @@ steps:
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
-  waitFor: ['compile', 'gcr-auth']
+  waitFor: ['compile']
   id: 'release-chart'
 
 - name: gcr.io/cloud-builders/gcloud
