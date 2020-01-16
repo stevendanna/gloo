@@ -31,7 +31,7 @@ BUILD_ID := $(BUILD_ID)
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 
 #----------------------------------------------------------------------------------
-# Marcos
+# Macros
 #----------------------------------------------------------------------------------
 
 # This macro takes a relative path as its only argument and returns all the files
@@ -298,7 +298,6 @@ $(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
 .PHONY: envoyinit
 envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
 
-
 $(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 	cp $< $@
 
@@ -320,7 +319,6 @@ $(OUTPUT_DIR)/envoywasm-linux-amd64: $(ENVOY_WASM_SOURCES)
 .PHONY: envoywasm
 envoywasm: $(OUTPUT_DIR)/envoywasm-linux-amd64
 
-
 $(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 	cp $< $@
 
@@ -329,6 +327,28 @@ gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
 		-t quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION)
 
+#----------------------------------------------------------------------------------
+# Envoy init (SIDECAR)
+#----------------------------------------------------------------------------------
+
+ENVOY_SIDECAR_DIR=projects/envoyinit/cmd
+ENVOY_SIDECAR_SOURCES=$(call get_sources,$(ENVOY_SIDECAR_DIR))
+
+$(OUTPUT_DIR)/envoysidecar-linux-amd64: $(ENVOY_SIDECAR_SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_SIDECAR_DIR)/main.go
+
+.PHONY: envoysidecar
+envoysidecar: $(OUTPUT_DIR)/envoysidecar-linux-amd64
+
+$(OUTPUT_DIR)/Dockerfile.envoysidecar: $(ENVOY_SIDECAR_DIR)/Dockerfile.envoysidecar
+	cp $< $@
+	cp $(ENVOY_SIDECAR_DIR)/envoy-sidecar.yaml $(OUTPUT_DIR)/
+	cp $(ENVOY_SIDECAR_DIR)/docker-sidecar-entrypoint.sh $(OUTPUT_DIR)/
+
+.PHONY: gloo-envoy-sidecar-wrapper-docker
+gloo-envoy-sidecar-wrapper-docker: $(OUTPUT_DIR)/envoysidecar-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoysidecar
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoysidecar \
+		-t quay.io/solo-io/gloo-envoy-sidecar-wrapper:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes

@@ -1,0 +1,11 @@
+FROM envoyproxy/envoy:latest
+
+COPY envoy-sidecar.yaml /tmpl/envoy.yaml.tmpl
+COPY docker-sidecar-entrypoint.sh /
+
+RUN chmod 500 /docker-sidecar-entrypoint.sh
+
+RUN apt-get update && \
+    apt-get install gettext -y
+
+ENTRYPOINT ["/docker-sidecar-entrypoint.sh"]
