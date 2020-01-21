@@ -1,4 +1,4 @@
-FROM envoyproxy/envoy:latest
+FROM envoyproxy/envoy:v1.13.0
 
 COPY envoy-sidecar.yaml /etc/envoy.yaml
 COPY docker-sidecar-entrypoint.sh /
