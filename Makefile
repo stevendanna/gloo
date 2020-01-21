@@ -355,6 +355,12 @@ ENVOY_SIDECAR_SOURCES=$(call get_sources,$(ENVOY_SIDECAR_DIR))
 $(OUTPUT_DIR)/envoysidecar-linux-amd64: $(ENVOY_SIDECAR_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_SIDECAR_DIR)/main.go
 
+SDS_DIR=projects/sds/cmd
+SDS_SOURCES=$(call get_sources,$(SDS_DIR))
+
+$(OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/main.go
+
 .PHONY: envoysidecar
 envoysidecar: $(OUTPUT_DIR)/envoysidecar-linux-amd64
 
@@ -388,28 +394,6 @@ $(OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 certgen-docker: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certgen
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.certgen \
 		-t quay.io/solo-io/certgen:$(VERSION)
-
-
-#----------------------------------------------------------------------------------
-# SDS Server - gRPC server for serving SDS config for Gloo MTLS
-#----------------------------------------------------------------------------------
-
-SDS_DIR=projects/sds/cmd
-SDS_SOURCES=$(call get_sources,$(SDS_DIR))
-
-$(OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/main.go
-
-.PHONY: sds
-sds: $(OUTPUT_DIR)/sds-linux-amd64
-
-$(OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/Dockerfile
-	cp $< $@
-
-.PHONY: sds-docker
-sds-docker: $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.sds
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.sds \
-		-t quay.io/solo-io/sds:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Build All

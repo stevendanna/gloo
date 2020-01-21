@@ -2,12 +2,18 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"google.golang.org/grpc"
 	"hash/fnv"
 	"io/ioutil"
 	"net"
+	"os"
+
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/go-utils/contextutils"
+
+	"github.com/fsnotify/fsnotify"
+	"google.golang.org/grpc"
 
 	auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -17,48 +23,53 @@ import (
 )
 
 const (
-	SslKeyFile  = "/etc/envoy/tls.key"
-	SslCertFile = "/etc/envoy/tls.crt"
-	SslCaFile = "/etc/envoy/tls.crt"
+	sslKeyFile  = "/etc/envoy/ssl/tls.key"
+	sslCertFile = "/etc/envoy/ssl/tls.crt"
+	sslCaFile   = "/etc/envoy/ssl/tls.crt"
+	sdsClient   = "sds_client"
 )
 
 var (
-	key, cert, ca []byte
+	sdsServerAddress = flag.String("sdsServerAddress", "127.0.0.1:8234", "The SDS server address.")
+	key, cert, ca    []byte
+	grpcOptions      = []grpc.ServerOption{grpc.MaxConcurrentStreams(1000000)}
 )
 
-type EnvoyKeyHasher struct{}
+type EnvoyKey struct{}
 
-func (h *EnvoyKeyHasher) ID(node *core.Node) string {
-	return node.GetId()
+func (h *EnvoyKey) ID(node *core.Node) string {
+	return sdsClient
 }
 
 func main() {
-	ctx := context.TODO()
+	flag.Parse()
+	ctx := contextutils.WithLogger(context.Background(), "sds_server")
+	ctx = contextutils.WithLoggerValues(ctx, "version", version.Version)
 
 	// Set up the gRPC server
 	snapshotCache, err := runGrpcServer(ctx) // runs the grpc server in internal goroutines
 	if err != nil {
-		fmt.Printf("%v", err)
+		contextutils.LoggerFrom(ctx).Info("%v", err)
 	}
 
-	key, err = ioutil.ReadFile(SslKeyFile)
+	key, err = ioutil.ReadFile(sslKeyFile)
 	if err != nil {
-		fmt.Printf("err: %v", err)
+		contextutils.LoggerFrom(ctx).Info("err: ", err)
 	}
-	cert, err = ioutil.ReadFile(SslCertFile)
+	cert, err = ioutil.ReadFile(sslCertFile)
 	if err != nil {
-		fmt.Printf("err: %v", err)
+		contextutils.LoggerFrom(ctx).Info("err: ", err)
 	}
-	ca, err = ioutil.ReadFile(SslCaFile)
+	ca, err = ioutil.ReadFile(sslCaFile)
 	if err != nil {
-		fmt.Printf("err: %v", err)
+		contextutils.LoggerFrom(ctx).Info("err: ", err)
 	}
-	updateSDSConfig(cert, key, cert, snapshotCache)
+	updateSDSConfig(ctx, cert, key, cert, snapshotCache)
 
 	// creates a new file watcher
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		fmt.Println("ERROR", err)
+		contextutils.LoggerFrom(ctx).Warn("error when setting up file watcher: ", err)
 	}
 	defer watcher.Close()
 
@@ -69,37 +80,37 @@ func main() {
 			select {
 			// watch for events
 			case event := <-watcher.Events:
-				fmt.Printf("EVENT! %#v\n", event)
-				key, err = ioutil.ReadFile(SslKeyFile)
+				contextutils.LoggerFrom(ctx).Info("received event: \n", event)
+				key, err = ioutil.ReadFile(sslKeyFile)
 				if err != nil {
-					fmt.Printf("err: %v", err)
+					contextutils.LoggerFrom(ctx).Info("err: ", err)
 				}
-				cert, err = ioutil.ReadFile(SslCertFile)
+				cert, err = ioutil.ReadFile(sslCertFile)
 				if err != nil {
-					fmt.Printf("err: %v", err)
+					contextutils.LoggerFrom(ctx).Info("err: ", err)
 				}
-				ca, err = ioutil.ReadFile(SslCaFile)
+				ca, err = ioutil.ReadFile(sslCaFile)
 				if err != nil {
-					fmt.Printf("err: %v", err)
+					contextutils.LoggerFrom(ctx).Info("err: ", err)
 				}
-				updateSDSConfig(cert, key, ca, snapshotCache)
+				updateSDSConfig(ctx, cert, key, ca, snapshotCache)
 
 				// watch for errors
-			case err := <-watcher.Errors:
-				fmt.Println("ERROR", err)
+			case err := <-watcher.errors:
+				contextutils.LoggerFrom(ctx).Info("Received error: \n", err)
 			}
 		}
 	}()
 
 	// out of the box fsnotify can watch a single file, or a single directory
-	if err := watcher.Add(SslCertFile); err != nil {
-		fmt.Println("ERROR", err)
+	if err := watcher.Add(sslCertFile); err != nil {
+		contextutils.LoggerFrom(ctx).Warn(fmt.Sprintf("error adding watch to file %v: %v", sslCertFile, err))
 	}
-	if err := watcher.Add(SslKeyFile); err != nil {
-		fmt.Println("ERROR", err)
+	if err := watcher.Add(sslKeyFile); err != nil {
+		contextutils.LoggerFrom(ctx).Warn(fmt.Sprintf("error adding watch to file %v: %v", sslKeyFile, err))
 	}
-	if err := watcher.Add(SslCaFile); err != nil {
-		fmt.Println("ERROR", err)
+	if err := watcher.Add(sslCaFile); err != nil {
+		contextutils.LoggerFrom(ctx).Warn(fmt.Sprintf("error adding watch to file %v: %v", sslCaFile, err))
 	}
 
 	<-done
@@ -110,44 +121,41 @@ func runGrpcServer(ctx context.Context) (cache.SnapshotCache, error) {
 	// streams over a single TCP connection. If a proxy multiplexes requests over
 	// a single connection to the management server, then it might lead to
 	// availability problems.
-	var grpcOptions []grpc.ServerOption
-	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(1000000))
 	grpcServer := grpc.NewServer(grpcOptions...)
-	address := fmt.Sprintf("127.0.0.1:8234")
 
-	lis, err := net.Listen("tcp", address)
+	lis, err := net.Listen("tcp", *sdsServerAddress)
 	if err != nil {
 		return nil, err
 	}
-	hasher := &EnvoyKeyHasher{}
+	hasher := &EnvoyKey{}
 	snapshotCache := cache.NewSnapshotCache(false, hasher, nil)
 	svr := server.NewServer(context.Background(), snapshotCache, nil)
 
 	// register services
 	sds.RegisterSecretDiscoveryServiceServer(grpcServer, svr)
 
-	fmt.Printf("sds server listening on %s\n", address)
+	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("sds server listening on %s\n", *sdsServerAddress))
 	go func() {
 		if err = grpcServer.Serve(lis); err != nil {
-			fmt.Println(err)
+			os.Exit(1)
 		}
 	}()
-	go func(){
+	go func() {
 		<-ctx.Done()
-		fmt.Printf("Stopping sds server on %d\n", address)
+		contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("stopping sds server on %s\n", *sdsServerAddress))
 		grpcServer.GracefulStop()
 	}()
 	return snapshotCache, nil
 }
 
-func updateSDSConfig(cert, key, validation [] byte, snapshotCache cache.SnapshotCache) {
+func updateSDSConfig(ctx context.Context, cert, key, validation []byte, snapshotCache cache.SnapshotCache) {
 	hash := fnv.New64()
 	hash.Write(cert)
 	hash.Write(key)
 	hash.Write(validation)
 	items := []cache.Resource{
 		&auth.Secret{
-			Name:"server_cert",
+			Name: "server_cert",
 			Type: &auth.Secret_TlsCertificate{
 				TlsCertificate: &auth.TlsCertificate{
 					CertificateChain: &core.DataSource{
@@ -176,10 +184,10 @@ func updateSDSConfig(cert, key, validation [] byte, snapshotCache cache.Snapshot
 			},
 		},
 	}
-	secretSnapshot:=cache.Snapshot{}
-	version := fmt.Sprintf("%d",hash.Sum64())
-	fmt.Printf("Snapshot version is %s", version)
+	secretSnapshot := cache.Snapshot{}
+	version := fmt.Sprintf("%d", hash.Sum64())
+	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("snapshot version is %s", version))
 	secretSnapshot.Resources[cache.Secret] = cache.NewResources(version, items)
 
-	snapshotCache.SetSnapshot("sds_client", secretSnapshot)
+	snapshotCache.SetSnapshot(sdsClient, secretSnapshot)
 }

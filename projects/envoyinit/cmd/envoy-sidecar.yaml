@@ -10,7 +10,7 @@ static_resources:
       - name: envoy.tcp_proxy
         config:
           stat_prefix: ingress_tcp
-          cluster: xds_cluster
+          cluster: gloo_cluster
       transport_socket:
         name: envoy.transport_sockets.tls
         typed_config:
@@ -45,10 +45,10 @@ static_resources:
                 socket_address:
                   address: 127.0.0.1
                   port_value: 8234
-  - name: xds_cluster
+  - name: gloo_cluster
     connect_timeout: 5.000s
     load_assignment:
-      cluster_name: xds_cluster
+      cluster_name: gloo_cluster
       endpoints:
       - lb_endpoints:
         - endpoint:
