@@ -49,20 +49,20 @@ func main() {
 	// Set up the gRPC server
 	snapshotCache, err := runGrpcServer(ctx) // runs the grpc server in internal goroutines
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Info("%v", err)
+		contextutils.LoggerFrom(ctx).Warn("%v", err)
 	}
 
 	key, err = ioutil.ReadFile(sslKeyFile)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Info("err: ", err)
+		contextutils.LoggerFrom(ctx).Warn("err: ", err)
 	}
 	cert, err = ioutil.ReadFile(sslCertFile)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Info("err: ", err)
+		contextutils.LoggerFrom(ctx).Warn("err: ", err)
 	}
 	ca, err = ioutil.ReadFile(sslCaFile)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Info("err: ", err)
+		contextutils.LoggerFrom(ctx).Warn("err: ", err)
 	}
 	updateSDSConfig(ctx, cert, key, cert, snapshotCache)
 
@@ -83,21 +83,21 @@ func main() {
 				contextutils.LoggerFrom(ctx).Info("received event: \n", event)
 				key, err = ioutil.ReadFile(sslKeyFile)
 				if err != nil {
-					contextutils.LoggerFrom(ctx).Info("err: ", err)
+					contextutils.LoggerFrom(ctx).Warn("err: ", err)
 				}
 				cert, err = ioutil.ReadFile(sslCertFile)
 				if err != nil {
-					contextutils.LoggerFrom(ctx).Info("err: ", err)
+					contextutils.LoggerFrom(ctx).Warn("err: ", err)
 				}
 				ca, err = ioutil.ReadFile(sslCaFile)
 				if err != nil {
-					contextutils.LoggerFrom(ctx).Info("err: ", err)
+					contextutils.LoggerFrom(ctx).Warn("err: ", err)
 				}
 				updateSDSConfig(ctx, cert, key, ca, snapshotCache)
 
 				// watch for errors
-			case err := <-watcher.errors:
-				contextutils.LoggerFrom(ctx).Info("Received error: \n", err)
+			case err := <-watcher.Errors:
+				contextutils.LoggerFrom(ctx).Warn("Received error: \n", err)
 			}
 		}
 	}()
@@ -186,7 +186,7 @@ func updateSDSConfig(ctx context.Context, cert, key, validation []byte, snapshot
 	}
 	secretSnapshot := cache.Snapshot{}
 	version := fmt.Sprintf("%d", hash.Sum64())
-	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("snapshot version is %s", version))
+	contextutils.LoggerFrom(ctx).Debug(fmt.Sprintf("snapshot version is %s", version))
 	secretSnapshot.Resources[cache.Secret] = cache.NewResources(version, items)
 
 	snapshotCache.SetSnapshot(sdsClient, secretSnapshot)
