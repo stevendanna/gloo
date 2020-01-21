@@ -1,7 +1,8 @@
 FROM envoyproxy/envoy:latest
 
-COPY envoy-sidecar.yaml /tmpl/envoy.yaml.tmpl
+COPY envoy-sidecar.yaml /etc/envoy.yaml
 COPY docker-sidecar-entrypoint.sh /
+COPY sds-linux-amd64 /usr/local/bin/sds
 
 RUN chmod 500 /docker-sidecar-entrypoint.sh
 

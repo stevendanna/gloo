@@ -189,7 +189,6 @@ GATEWAY_SOURCES=$(call get_sources,$(GATEWAY_DIR))
 $(OUTPUT_DIR)/gateway-linux-amd64: $(GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
 
-
 .PHONY: gateway
 gateway: $(OUTPUT_DIR)/gateway-linux-amd64
 
@@ -209,7 +208,6 @@ INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 
 $(OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
-
 
 .PHONY: ingress
 ingress: $(OUTPUT_DIR)/ingress-linux-amd64
@@ -231,7 +229,6 @@ ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
 $(OUTPUT_DIR)/access-logger-linux-amd64: $(ACCESS_LOG_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
 
-
 .PHONY: access-logger
 access-logger: $(OUTPUT_DIR)/access-logger-linux-amd64
 
@@ -252,7 +249,6 @@ DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 $(OUTPUT_DIR)/discovery-linux-amd64: $(DISCOVERY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
 
-
 .PHONY: discovery
 discovery: $(OUTPUT_DIR)/discovery-linux-amd64
 
@@ -272,7 +268,6 @@ GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 
 $(OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
-
 
 .PHONY: gloo
 gloo: $(OUTPUT_DIR)/gloo-linux-amd64
@@ -346,7 +341,7 @@ $(OUTPUT_DIR)/Dockerfile.envoysidecar: $(ENVOY_SIDECAR_DIR)/Dockerfile.envoyside
 	cp $(ENVOY_SIDECAR_DIR)/docker-sidecar-entrypoint.sh $(OUTPUT_DIR)/
 
 .PHONY: gloo-envoy-sidecar-wrapper-docker
-gloo-envoy-sidecar-wrapper-docker: $(OUTPUT_DIR)/envoysidecar-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoysidecar
+gloo-envoy-sidecar-wrapper-docker: $(OUTPUT_DIR)/envoysidecar-linux-amd64 $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoysidecar
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoysidecar \
 		-t quay.io/solo-io/gloo-envoy-sidecar-wrapper:$(VERSION)
 
@@ -363,7 +358,6 @@ $(OUTPUT_DIR)/certgen-linux-amd64: $(CERTGEN_SOURCES)
 .PHONY: certgen
 certgen: $(OUTPUT_DIR)/certgen-linux-amd64
 
-
 $(OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 	cp $< $@
 
@@ -372,6 +366,27 @@ certgen-docker: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certg
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.certgen \
 		-t quay.io/solo-io/certgen:$(VERSION)
 
+
+#----------------------------------------------------------------------------------
+# SDS Server - gRPC server for serving SDS config for Gloo MTLS
+#----------------------------------------------------------------------------------
+
+SDS_DIR=projects/sds/cmd
+SDS_SOURCES=$(call get_sources,$(SDS_DIR))
+
+$(OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/main.go
+
+.PHONY: sds
+sds: $(OUTPUT_DIR)/sds-linux-amd64
+
+$(OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/Dockerfile
+	cp $< $@
+
+.PHONY: sds-docker
+sds-docker: $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.sds
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.sds \
+		-t quay.io/solo-io/sds:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Build All

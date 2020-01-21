@@ -1,3 +1,6 @@
+node:
+  id: sds_client
+  cluster: sds_client
 static_resources:
   listeners:
   - name: listener_0
@@ -13,13 +16,35 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
           common_tls_context:
-            tls_certificates:
-              certificate_chain: { "filename": ${SSL_CERT_FILE} }
-              private_key: { "filename": ${SSL_KEY_FILE} }
-            validation_context:
-              trusted_ca:
-                filename: ${SSL_CA_FILE}
+            tls_certificate_sds_secret_configs:
+              - name: server_cert
+                sds_config:
+                  api_config_source:
+                    api_type: GRPC
+                    grpc_services:
+                      envoy_grpc:
+                        cluster_name: sds_server_mtls
+            validation_context_sds_secret_config:
+              name: validation_context
+              sds_config:
+                api_config_source:
+                  api_type: GRPC
+                  grpc_services:
+                    envoy_grpc:
+                      cluster_name: sds_server_mtls
   clusters:
+  - name: sds_server_mtls
+    connect_timeout: 0.25s
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: sds_server_mtls
+      endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 8234
   - name: xds_cluster
     connect_timeout: 5.000s
     load_assignment:
