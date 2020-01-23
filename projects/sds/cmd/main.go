@@ -32,7 +32,7 @@ const (
 var (
 	sdsServerAddress = flag.String("sdsServerAddress", "127.0.0.1:8234", "The SDS server address.")
 	key, cert, ca    []byte
-	grpcOptions      = []grpc.ServerOption{grpc.MaxConcurrentStreams(1000000)}
+	grpcOptions      = []grpc.ServerOption{grpc.MaxConcurrentStreams(1)}
 )
 
 type EnvoyKey struct{}
@@ -43,7 +43,8 @@ func (h *EnvoyKey) ID(node *core.Node) string {
 
 func main() {
 	flag.Parse()
-	ctx := contextutils.WithLogger(context.Background(), "sds_server")
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx = contextutils.WithLogger(ctx, "sds_server")
 	ctx = contextutils.WithLoggerValues(ctx, "version", version.Version)
 
 	// Set up the gRPC server
@@ -101,8 +102,6 @@ func main() {
 			}
 		}
 	}()
-
-	// out of the box fsnotify can watch a single file, or a single directory
 	if err := watcher.Add(sslCertFile); err != nil {
 		contextutils.LoggerFrom(ctx).Warn(fmt.Sprintf("error adding watch to file %v: %v", sslCertFile, err))
 	}
@@ -114,13 +113,10 @@ func main() {
 	}
 
 	<-done
+	cancel()
 }
 
 func runGrpcServer(ctx context.Context) (cache.SnapshotCache, error) {
-	// gRPC golang library sets a very small upper bound for the number gRPC/h2
-	// streams over a single TCP connection. If a proxy multiplexes requests over
-	// a single connection to the management server, then it might lead to
-	// availability problems.
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	lis, err := net.Listen("tcp", *sdsServerAddress)
@@ -185,9 +181,9 @@ func updateSDSConfig(ctx context.Context, cert, key, validation []byte, snapshot
 		},
 	}
 	secretSnapshot := cache.Snapshot{}
-	version := fmt.Sprintf("%d", hash.Sum64())
-	contextutils.LoggerFrom(ctx).Debug(fmt.Sprintf("snapshot version is %s", version))
-	secretSnapshot.Resources[cache.Secret] = cache.NewResources(version, items)
+	snapshotVersion := fmt.Sprintf("%d", hash.Sum64())
+	contextutils.LoggerFrom(ctx).Debug(fmt.Sprintf("snapshot snapshotVersion is %s", snapshotVersion))
+	secretSnapshot.Resources[cache.Secret] = cache.NewResources(snapshotVersion, items)
 
 	snapshotCache.SetSnapshot(sdsClient, secretSnapshot)
 }

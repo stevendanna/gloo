@@ -304,7 +304,17 @@ gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 		-t quay.io/solo-io/gloo:$(VERSION)
 
 #----------------------------------------------------------------------------------
-# Envoy init (BASE)
+# SDS Server - gRPC server for serving SDS config for Gloo MTLS
+#----------------------------------------------------------------------------------
+
+SDS_DIR=projects/sds/cmd
+SDS_SOURCES=$(call get_sources,$(SDS_DIR))
+
+$(OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/main.go
+
+#----------------------------------------------------------------------------------
+# Envoy init (BASE/SIDECAR)
 #----------------------------------------------------------------------------------
 
 ENVOYINIT_DIR=projects/envoyinit/cmd
@@ -318,9 +328,11 @@ envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
 
 $(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 	cp $< $@
+	cp $(ENVOYINIT_DIR)/envoy-sidecar.yaml $(OUTPUT_DIR)/
+	cp $(ENVOYINIT_DIR)/docker-entrypoint.sh $(OUTPUT_DIR)/
 
 .PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
+gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
 		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION)
 
@@ -344,35 +356,6 @@ $(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
 		-t quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION)
-
-#----------------------------------------------------------------------------------
-# Envoy init (SIDECAR)
-#----------------------------------------------------------------------------------
-
-ENVOY_SIDECAR_DIR=projects/envoyinit/cmd
-ENVOY_SIDECAR_SOURCES=$(call get_sources,$(ENVOY_SIDECAR_DIR))
-
-$(OUTPUT_DIR)/envoysidecar-linux-amd64: $(ENVOY_SIDECAR_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_SIDECAR_DIR)/main.go
-
-SDS_DIR=projects/sds/cmd
-SDS_SOURCES=$(call get_sources,$(SDS_DIR))
-
-$(OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/main.go
-
-.PHONY: envoysidecar
-envoysidecar: $(OUTPUT_DIR)/envoysidecar-linux-amd64
-
-$(OUTPUT_DIR)/Dockerfile.envoysidecar: $(ENVOY_SIDECAR_DIR)/Dockerfile.envoysidecar
-	cp $< $@
-	cp $(ENVOY_SIDECAR_DIR)/envoy-sidecar.yaml $(OUTPUT_DIR)/
-	cp $(ENVOY_SIDECAR_DIR)/docker-sidecar-entrypoint.sh $(OUTPUT_DIR)/
-
-.PHONY: gloo-envoy-sidecar-wrapper-docker
-gloo-envoy-sidecar-wrapper-docker: $(OUTPUT_DIR)/envoysidecar-linux-amd64 $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoysidecar
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoysidecar \
-		-t quay.io/solo-io/gloo-envoy-sidecar-wrapper:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
