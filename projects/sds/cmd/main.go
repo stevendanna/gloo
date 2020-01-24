@@ -133,6 +133,7 @@ func runGrpcServer(ctx context.Context) (cache.SnapshotCache, error) {
 	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("sds server listening on %s\n", *sdsServerAddress))
 	go func() {
 		if err = grpcServer.Serve(lis); err != nil {
+			contextutils.LoggerFrom(ctx).Error(fmt.Sprintf("Stopping sds server listening on %s\n", *sdsServerAddress))
 			os.Exit(1)
 		}
 	}()

@@ -57,6 +57,12 @@ spec:
           - mountPath: /etc/envoy/ssl
             name: gloo-mtls
             readOnly: true
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.gloo.deployment.xdsPort }}
+          initialDelaySeconds: 1
+          periodSeconds: 2
+          failureThreshold: 10
 {{- end }}
       - image: {{template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
