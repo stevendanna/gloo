@@ -1,0 +1,18 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Enable MTLS authentication in between Gloo and Envoy.
+    issueLink: https://github.com/solo-io/gloo/issues/2134
+  - type: HELM
+    description: >
+      Enable MTLS authentication in between Gloo and Envoy. Introduces the new Helm setting
+      "global.glooMtls.enabled", "global.glooMtls.tlsKey", and "global.glooMtls.tlsCert".
+      An example of a helm override file that enables MTLS authentication with self-signed certs is:
+      ```
+      global:
+        glooMtls:
+          enabled: true
+            tlsKey: <secret>
+            tlsCert: <secret>
+      ```
+    issueLink: https://github.com/solo-io/gloo/issues/2134
