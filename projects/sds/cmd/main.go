@@ -32,7 +32,7 @@ const (
 var (
 	sdsServerAddress = flag.String("sdsServerAddress", "0.0.0.0:8234", "The SDS server address.")
 	key, cert, ca    []byte
-	grpcOptions      = []grpc.ServerOption{grpc.MaxConcurrentStreams(1)}
+	grpcOptions      = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
 )
 
 type EnvoyKey struct{}
