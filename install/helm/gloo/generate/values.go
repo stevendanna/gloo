@@ -27,12 +27,9 @@ type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
 	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
-	Wasm       Wasm        `json:"wasm"`
-	GlooStats  Stats       `json:"glooStats" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
-}
-
-type Stats struct {
-	Enabled bool `json:"enabled,omitempty" desc:"Controls whether or not prometheus stats are enabled"`
+	Wasm       Wasm        `json:"wasm,omitempty"`
+	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
+	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
 }
 
 type Namespace struct {
@@ -302,4 +299,14 @@ type K8s struct {
 
 type Wasm struct {
 	Enabled bool `json:"enabled" desc:"switch the gateway-proxy image to one which supports WASM"`
+}
+
+type Stats struct {
+	Enabled bool `json:"enabled,omitempty" desc:"Controls whether or not prometheus stats are enabled"`
+}
+
+type Mtls struct {
+	Enabled bool   `json:"enabled,omitempty" desc:"Enables internal mtls authentication"`
+	TlsKey  []byte `json:"tlsKey,omitempty" desc:"Byte string of TLS key"`
+	TlsCert []byte `json:"tlsCert,omitempty" desc:"Byte string of TLS cert"`
 }

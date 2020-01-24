@@ -29,6 +29,12 @@ spec:
     spec:
       serviceAccountName: gloo
       volumes:
+{{- if .Values.global.glooMtls.enabled }}
+      - name: gloo-mtls
+        secret:
+          defaultMode: 420
+          secretName: gloo-mtls
+{{- end }}
       - name: labels-volume
         downwardAPI:
           items:
@@ -36,6 +42,22 @@ spec:
               fieldRef:
                 fieldPath: metadata.labels
       containers:
+{{- if .Values.global.glooMtls.enabled }}
+      - env:
+        - name: ENVOY_SIDECAR
+          value: "true"
+        name: envoy-sidecar
+        image: "{{ $image.registry }}/gloo-envoy-wrapper:{{ $image.tag }}"
+        imagePullPolicy: {{ $image.pullPolicy }}
+        ports:
+          - containerPort: {{ .Values.gloo.deployment.xdsPort }}
+            name: grpc-xds
+            protocol: TCP
+        volumeMounts:
+          - mountPath: /etc/envoy/ssl
+            name: gloo-mtls
+            readOnly: true
+{{- end }}
       - image: {{template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: gloo
@@ -62,9 +84,11 @@ spec:
             drop:
             - ALL
         ports:
+{{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
           protocol: TCP
+{{- end }}
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: grpc-validation
           protocol: TCP
@@ -92,12 +116,14 @@ spec:
           - name: WASM_ENABLED
             value: "true"
         {{- end }}
+{{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 10
+{{- end }}
       {{- if $image.pullSecret }}
       imagePullSecrets:
         - name: {{ $image.pullSecret }}

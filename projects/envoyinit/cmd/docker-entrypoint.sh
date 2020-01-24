@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-if [ -n "$GLOO_SIDECAR" ]
+if [ -n "$ENVOY_SIDECAR" ]
 then
   echo "Starting up SDS Server..."
   /usr/local/bin/sds &

@@ -391,7 +391,7 @@ build: gloo glooctl gateway discovery envoyinit certgen ingress
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm/gloo
 
-# Creates Chart.yaml and values.yaml. See install/helm/gloo/README.md for more info.
+# Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
 .PHONY: generate-helm-files
 generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 

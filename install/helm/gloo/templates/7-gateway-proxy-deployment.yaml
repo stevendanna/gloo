@@ -173,6 +173,11 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- if $global.glooMtls.enabled }}
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls
+          readOnly: true
+{{- end}}
 {{- if $spec.extraContainersHelper }}
         - mountPath: /usr/share/shared-data
           name: shared-data
@@ -204,6 +209,12 @@ spec:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
+{{- if $global.glooMtls.enabled }}
+      - name: gloo-mtls
+        secret:
+          defaultMode: 420
+          secretName: gloo-mtls
+{{- end }}
       {{- if $spec.extraContainersHelper }}
       - name: shared-data
         emptyDir: {}

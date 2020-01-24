@@ -128,6 +128,18 @@ data:
                     address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
                     port_value: {{ $.Values.gloo.deployment.xdsPort }}
         http2_protocol_options: {}
+{{- if $global.glooMtls.enabled }}
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+            common_tls_context:
+              tls_certificates:
+                - certificate_chain: { "filename": "/etc/envoy/ssl/tls.crt" }
+                  private_key: { "filename": "/etc/envoy/ssl/tls.key" }
+              validation_context:
+                trusted_ca: { "filename": "/etc/envoy/ssl/tls.crt" }
+{{- end }}
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
