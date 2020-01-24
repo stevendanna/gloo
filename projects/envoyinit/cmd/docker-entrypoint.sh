@@ -3,11 +3,11 @@ set -e
 
 if [ -n "$ENVOY_SIDECAR" ]
 then
-  echo "Starting up SDS Server..."
-  /usr/local/bin/sds &
-  sleep 1 # Wait for SDS server to start up properly
   echo "Starting Envoy..."
-  /usr/local/bin/envoy -c /etc/envoy/envoy-sidecar.yaml
+  /usr/local/bin/envoy -c /etc/envoy/envoy-sidecar.yaml &
+  sleep 1 # Wait for Envoy to start up properly
+  echo "Starting up SDS Server..."
+  /usr/local/bin/sds
 else
   /usr/local/bin/envoyinit
 fi

@@ -30,7 +30,7 @@ const (
 )
 
 var (
-	sdsServerAddress = flag.String("sdsServerAddress", "127.0.0.1:8234", "The SDS server address.")
+	sdsServerAddress = flag.String("sdsServerAddress", "0.0.0.0:8234", "The SDS server address.")
 	key, cert, ca    []byte
 	grpcOptions      = []grpc.ServerOption{grpc.MaxConcurrentStreams(1)}
 )
