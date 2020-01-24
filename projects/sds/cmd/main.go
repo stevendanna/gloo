@@ -23,14 +23,14 @@ import (
 )
 
 const (
-	sslKeyFile  = "/etc/envoy/ssl/tls.key"
-	sslCertFile = "/etc/envoy/ssl/tls.crt"
-	sslCaFile   = "/etc/envoy/ssl/tls.crt"
 	sdsClient   = "sds_client"
 )
 
 var (
 	sdsServerAddress = flag.String("sdsServerAddress", "0.0.0.0:8234", "The SDS server address.")
+	sslKeyFile = flag.String("sslKeyFile", "/etc/envoy/ssl/tls.key", "The self-signed TLS key file.")
+	sslCertFile = flag.String("sslCertFile", "/etc/envoy/ssl/tls.crt", "The self-signed TLS cert file.")
+	sslCaFile = flag.String("sslCaFile", "/etc/envoy/ssl/tls.crt", "The self-signed TLS ca file.")
 	key, cert, ca    []byte
 	grpcOptions      = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
 )
@@ -53,19 +53,8 @@ func main() {
 		contextutils.LoggerFrom(ctx).Warn("%v", err)
 	}
 
-	key, err = ioutil.ReadFile(sslKeyFile)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).Warn("err: ", err)
-	}
-	cert, err = ioutil.ReadFile(sslCertFile)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).Warn("err: ", err)
-	}
-	ca, err = ioutil.ReadFile(sslCaFile)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).Warn("err: ", err)
-	}
-	updateSDSConfig(ctx, cert, key, cert, snapshotCache)
+	// Initialize the SDS config
+	updateSDSConfig(ctx, snapshotCache)
 
 	// creates a new file watcher
 	watcher, err := fsnotify.NewWatcher()
@@ -82,19 +71,7 @@ func main() {
 			// watch for events
 			case event := <-watcher.Events:
 				contextutils.LoggerFrom(ctx).Info("received event: \n", event)
-				key, err = ioutil.ReadFile(sslKeyFile)
-				if err != nil {
-					contextutils.LoggerFrom(ctx).Warn("err: ", err)
-				}
-				cert, err = ioutil.ReadFile(sslCertFile)
-				if err != nil {
-					contextutils.LoggerFrom(ctx).Warn("err: ", err)
-				}
-				ca, err = ioutil.ReadFile(sslCaFile)
-				if err != nil {
-					contextutils.LoggerFrom(ctx).Warn("err: ", err)
-				}
-				updateSDSConfig(ctx, cert, key, ca, snapshotCache)
+				updateSDSConfig(ctx, snapshotCache)
 
 				// watch for errors
 			case err := <-watcher.Errors:
@@ -102,13 +79,13 @@ func main() {
 			}
 		}
 	}()
-	if err := watcher.Add(sslCertFile); err != nil {
+	if err := watcher.Add(*sslCertFile); err != nil {
 		contextutils.LoggerFrom(ctx).Warn(fmt.Sprintf("error adding watch to file %v: %v", sslCertFile, err))
 	}
-	if err := watcher.Add(sslKeyFile); err != nil {
+	if err := watcher.Add(*sslKeyFile); err != nil {
 		contextutils.LoggerFrom(ctx).Warn(fmt.Sprintf("error adding watch to file %v: %v", sslKeyFile, err))
 	}
-	if err := watcher.Add(sslCaFile); err != nil {
+	if err := watcher.Add(*sslCaFile); err != nil {
 		contextutils.LoggerFrom(ctx).Warn(fmt.Sprintf("error adding watch to file %v: %v", sslCaFile, err))
 	}
 
@@ -145,11 +122,23 @@ func runGrpcServer(ctx context.Context) (cache.SnapshotCache, error) {
 	return snapshotCache, nil
 }
 
-func updateSDSConfig(ctx context.Context, cert, key, validation []byte, snapshotCache cache.SnapshotCache) {
+func updateSDSConfig(ctx context.Context, snapshotCache cache.SnapshotCache) {
+	key, err := ioutil.ReadFile(*sslKeyFile)
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Warn("err: ", err)
+	}
+	cert, err = ioutil.ReadFile(*sslCertFile)
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Warn("err: ", err)
+	}
+	ca, err = ioutil.ReadFile(*sslCaFile)
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Warn("err: ", err)
+	}
 	hash := fnv.New64()
 	hash.Write(cert)
 	hash.Write(key)
-	hash.Write(validation)
+	hash.Write(ca)
 	items := []cache.Resource{
 		&auth.Secret{
 			Name: "server_cert",
@@ -174,7 +163,7 @@ func updateSDSConfig(ctx context.Context, cert, key, validation []byte, snapshot
 				ValidationContext: &auth.CertificateValidationContext{
 					TrustedCa: &core.DataSource{
 						Specifier: &core.DataSource_InlineBytes{
-							InlineBytes: cert,
+							InlineBytes: ca,
 						},
 					},
 				},
