@@ -1,0 +1,36 @@
+{{- $image := .Values.gateway.certGenJob.image }}
+{{- if .Values.global.glooMtls.enabled }}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo-mtls-certgen
+  name: gloo-mtls-certgen
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        gloo: gloo-mtls-certs
+    spec:
+      serviceAccountName: gateway-certgen #piggybacking on gateway-certgen service account
+      containers:
+        - image: {{template "gloo.image" $image}}
+          imagePullPolicy: {{ $image.pullPolicy }}
+          name: certgen
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          args:
+            - "--secret-name=gloo-mtls-certs"
+            - "--svc-name=gloo-mtls-certs"
+      restartPolicy: Never
+{{- end }}

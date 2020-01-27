@@ -175,7 +175,7 @@ spec:
           name: envoy-config
 {{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl
-          name: gloo-mtls
+          name: gloo-mtls-certs
           readOnly: true
 {{- end}}
 {{- if $spec.extraContainersHelper }}
@@ -210,10 +210,10 @@ spec:
           name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
 {{- if $global.glooMtls.enabled }}
-      - name: gloo-mtls
+      - name: gloo-mtls-certs
         secret:
           defaultMode: 420
-          secretName: gloo-mtls
+          secretName: gloo-mtls-certs
 {{- end }}
       {{- if $spec.extraContainersHelper }}
       - name: shared-data

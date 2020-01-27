@@ -30,10 +30,10 @@ spec:
       serviceAccountName: gloo
       volumes:
 {{- if .Values.global.glooMtls.enabled }}
-      - name: gloo-mtls
+      - name: gloo-mtls-certs
         secret:
           defaultMode: 420
-          secretName: gloo-mtls
+          secretName: gloo-mtls-certs
 {{- end }}
       - name: labels-volume
         downwardAPI:
@@ -64,7 +64,7 @@ spec:
         imagePullPolicy: {{ $image.pullPolicy }}
         volumeMounts:
           - mountPath: /etc/envoy/ssl
-            name: gloo-mtls
+            name: gloo-mtls-certs
             readOnly: true
 {{- end }}
       - image: {{template "gloo.image" $image }}
