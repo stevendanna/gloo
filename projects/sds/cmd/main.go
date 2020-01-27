@@ -23,14 +23,14 @@ import (
 )
 
 const (
-	sdsClient   = "sds_client"
+	sdsClient = "sds_client"
 )
 
 var (
 	sdsServerAddress = flag.String("sdsServerAddress", "0.0.0.0:8234", "The SDS server address.")
-	sslKeyFile = flag.String("sslKeyFile", "/etc/envoy/ssl/tls.key", "The self-signed TLS key file.")
-	sslCertFile = flag.String("sslCertFile", "/etc/envoy/ssl/tls.crt", "The self-signed TLS cert file.")
-	sslCaFile = flag.String("sslCaFile", "/etc/envoy/ssl/tls.crt", "The self-signed TLS ca file.")
+	sslKeyFile       = flag.String("sslKeyFile", "/etc/envoy/ssl/tls.key", "The TLS key file.")
+	sslCertFile      = flag.String("sslCertFile", "/etc/envoy/ssl/tls.crt", "The TLS cert file.")
+	sslCaFile        = flag.String("sslCaFile", "/etc/envoy/ssl/tls.crt", "The TLS ca file.")
 	key, cert, ca    []byte
 	grpcOptions      = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
 )
