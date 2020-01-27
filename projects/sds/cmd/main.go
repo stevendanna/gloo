@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/go-utils/contextutils"
@@ -63,8 +65,6 @@ func main() {
 	}
 	defer watcher.Close()
 
-	done := make(chan bool)
-
 	go func() {
 		for {
 			select {
@@ -89,6 +89,16 @@ func main() {
 		contextutils.LoggerFrom(ctx).Warn(fmt.Sprintf("error adding watch to file %v: %v", sslCaFile, err))
 	}
 
+	// Wire in signal handling
+	done := make(chan bool, 1)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-sigs
+		fmt.Println()
+		fmt.Println(sig)
+		done <- true
+	}()
 	<-done
 	cancel()
 }
