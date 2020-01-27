@@ -53,16 +53,19 @@ spec:
           - containerPort: {{ .Values.gloo.deployment.xdsPort }}
             name: grpc-xds
             protocol: TCP
-        volumeMounts:
-          - mountPath: /etc/envoy/ssl
-            name: gloo-mtls
-            readOnly: true
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 10
+      - name: sds
+        image: "{{ $image.registry }}/sds:{{ $image.tag }}"
+        imagePullPolicy: {{ $image.pullPolicy }}
+        volumeMounts:
+          - mountPath: /etc/envoy/ssl
+            name: gloo-mtls
+            readOnly: true
 {{- end }}
       - image: {{template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}

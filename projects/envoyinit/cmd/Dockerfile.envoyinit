@@ -1,7 +1,6 @@
 FROM quay.io/solo-io/envoy-gloo:0.1.19
 
 COPY envoyinit-linux-amd64 /usr/local/bin/envoyinit
-COPY sds-linux-amd64 /usr/local/bin/sds
 
 # SDS-specific setup, only used if GLOO_MTLS=true
 COPY envoy-sidecar.yaml /etc/envoy/envoy-sidecar.yaml

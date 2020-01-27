@@ -304,7 +304,7 @@ gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 		-t quay.io/solo-io/gloo:$(VERSION)
 
 #----------------------------------------------------------------------------------
-# SDS Server - gRPC server for serving SDS config for Gloo MTLS
+# SDS Server - gRPC server for serving Secret Discovery Service config for Gloo MTLS
 #----------------------------------------------------------------------------------
 
 SDS_DIR=projects/sds/cmd
@@ -312,6 +312,17 @@ SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 
 $(OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
 	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/main.go
+
+.PHONY: sds
+sds: $(OUTPUT_DIR)/sds-linux-amd64
+
+$(OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/Dockerfile
+	cp $< $@
+
+.PHONY: sds-docker
+sds-docker: $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.sds
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.sds \
+		-t quay.io/solo-io/sds:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Envoy init (BASE/SIDECAR)
@@ -332,7 +343,7 @@ $(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 	cp $(ENVOYINIT_DIR)/docker-entrypoint.sh $(OUTPUT_DIR)/
 
 .PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
+gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
 		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION)
 
