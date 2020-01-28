@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"io/ioutil"
 	"net"
 	"os"
 
@@ -27,26 +28,34 @@ var (
 	grpcOptions = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
 )
 
+type TlsInfo struct {
+	key  []byte
+	cert []byte
+	ca   []byte
+}
+
 type EnvoyKey struct{}
 
 func (h *EnvoyKey) ID(node *core.Node) string {
 	return sdsClient
 }
 
-func RunSDSServer(ctx context.Context) (cache.SnapshotCache, error) {
+func SetupEnvoySDS() (*grpc.Server, cache.SnapshotCache) {
 	grpcServer := grpc.NewServer(grpcOptions...)
-
-	lis, err := net.Listen("tcp", sdsServerAddress)
-	if err != nil {
-		return nil, err
-	}
 	hasher := &EnvoyKey{}
 	snapshotCache := cache.NewSnapshotCache(false, hasher, nil)
 	svr := server.NewServer(context.Background(), snapshotCache, nil)
 
 	// register services
 	sds.RegisterSecretDiscoveryServiceServer(grpcServer, svr)
+	return grpcServer, snapshotCache
+}
 
+func RunSDSServer(ctx context.Context, grpcServer *grpc.Server) error {
+	lis, err := net.Listen("tcp", sdsServerAddress)
+	if err != nil {
+		return err
+	}
 	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("sds server listening on %s\n", sdsServerAddress))
 	go func() {
 		if err = grpcServer.Serve(lis); err != nil {
@@ -59,49 +68,90 @@ func RunSDSServer(ctx context.Context) (cache.SnapshotCache, error) {
 		contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("stopping sds server on %s\n", sdsServerAddress))
 		grpcServer.GracefulStop()
 	}()
-	return snapshotCache, nil
+	return nil
 }
 
-func UpdateSDSConfig(ctx context.Context, key, cert, ca []byte, snapshotCache cache.SnapshotCache) {
+func Sync(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile string, snapshotCache cache.SnapshotCache) error {
+	tls, err := ReadSecretsFromFiles(sslKeyFile, sslCertFile, sslCaFile)
+	if err != nil {
+		return err
+	}
+	err = UpdateSDSConfig(ctx, tls, snapshotCache)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ReadSecretsFromFiles(sslKeyFile, sslCertFile, sslCaFile string) (TlsInfo, error) {
+	var err error
+	key, err := ioutil.ReadFile(sslKeyFile)
+	if err != nil {
+		return TlsInfo{}, err
+	}
+	cert, err := ioutil.ReadFile(sslCertFile)
+	if err != nil {
+		return TlsInfo{}, err
+	}
+	ca, err := ioutil.ReadFile(sslCaFile)
+	if err != nil {
+		return TlsInfo{}, err
+	}
+	return TlsInfo{
+		key:  key,
+		cert: cert,
+		ca:   ca,
+	}, nil
+}
+
+func UpdateSDSConfig(ctx context.Context, tls TlsInfo, snapshotCache cache.SnapshotCache) error {
 	hash := fnv.New64()
-	hash.Write(cert)
-	hash.Write(key)
-	hash.Write(ca)
+	hash.Write(tls.key)
+	hash.Write(tls.cert)
+	hash.Write(tls.ca)
+	snapshotVersion := fmt.Sprintf("%d", hash.Sum64())
+	contextutils.LoggerFrom(ctx).Debug(fmt.Sprintf("snapshot snapshotVersion is %s", snapshotVersion))
+
 	items := []cache.Resource{
-		&auth.Secret{
-			Name: "server_cert",
-			Type: &auth.Secret_TlsCertificate{
-				TlsCertificate: &auth.TlsCertificate{
-					CertificateChain: &core.DataSource{
-						Specifier: &core.DataSource_InlineBytes{
-							InlineBytes: cert,
-						},
-					},
-					PrivateKey: &core.DataSource{
-						Specifier: &core.DataSource_InlineBytes{
-							InlineBytes: key,
-						},
+		serverCertSecret(tls.cert, tls.key),
+		validationContextSecret(tls.ca),
+	}
+	secretSnapshot := cache.Snapshot{}
+	secretSnapshot.Resources[cache.Secret] = cache.NewResources(snapshotVersion, items)
+	return snapshotCache.SetSnapshot(sdsClient, secretSnapshot)
+}
+
+func serverCertSecret(cert, key []byte) cache.Resource {
+	return &auth.Secret{
+		Name: "server_cert",
+		Type: &auth.Secret_TlsCertificate{
+			TlsCertificate: &auth.TlsCertificate{
+				CertificateChain: &core.DataSource{
+					Specifier: &core.DataSource_InlineBytes{
+						InlineBytes: cert,
 					},
 				},
-			},
-		},
-		&auth.Secret{
-			Name: "validation_context",
-			Type: &auth.Secret_ValidationContext{
-				ValidationContext: &auth.CertificateValidationContext{
-					TrustedCa: &core.DataSource{
-						Specifier: &core.DataSource_InlineBytes{
-							InlineBytes: ca,
-						},
+				PrivateKey: &core.DataSource{
+					Specifier: &core.DataSource_InlineBytes{
+						InlineBytes: key,
 					},
 				},
 			},
 		},
 	}
-	secretSnapshot := cache.Snapshot{}
-	snapshotVersion := fmt.Sprintf("%d", hash.Sum64())
-	contextutils.LoggerFrom(ctx).Debug(fmt.Sprintf("snapshot snapshotVersion is %s", snapshotVersion))
-	secretSnapshot.Resources[cache.Secret] = cache.NewResources(snapshotVersion, items)
+}
 
-	snapshotCache.SetSnapshot(sdsClient, secretSnapshot)
+func validationContextSecret(ca []byte) cache.Resource {
+	return &auth.Secret{
+		Name: "validation_context",
+		Type: &auth.Secret_ValidationContext{
+			ValidationContext: &auth.CertificateValidationContext{
+				TrustedCa: &core.DataSource{
+					Specifier: &core.DataSource_InlineBytes{
+						InlineBytes: ca,
+					},
+				},
+			},
+		},
+	}
 }

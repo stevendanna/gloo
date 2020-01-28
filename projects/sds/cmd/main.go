@@ -9,11 +9,10 @@ import (
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx = contextutils.WithLogger(ctx, "sds_server")
+	ctx := contextutils.WithLogger(context.Background(), "sds_server")
 	ctx = contextutils.WithLoggerValues(ctx, "version", version.Version)
 
-	if err := run.Run(ctx, cancel); err != nil {
+	if err := run.Run(ctx); err != nil {
 		contextutils.LoggerFrom(ctx).Fatal(err)
 	}
 }
