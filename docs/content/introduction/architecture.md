@@ -62,17 +62,17 @@ The *Translator* receives snapshots of the entire state, composed of the followi
 * Secrets
 * AuthConfigs
 
-user configuration, secrets, and discovery information and initiates a new *translation loop*, creating a new Envoy xDS Snapshot.
+The translator takes all of this information and initiates a new *translation loop* with the end goal of creating a new Envoy xDS Snapshot.
 
-1. The translation cycle starts by creating *[Envoy clusters](https://www.envoyproxy.io/docs/envoy/v1.8.0/api-v1/cluster_manager/cluster)* from all configured Upstreams. Each Upstream has a *type*, indicating which Upstream plugin is responsible for processing that Upstream object. Correctly configured Upstreams are converted into Envoy clusters by their respective plugins. Plugins may set cluster metadata on the cluster object.
+1. The translation cycle starts by defining *[Envoy clusters](https://www.envoyproxy.io/docs/envoy/v1.8.0/api-v1/cluster_manager/cluster)* from all configured Upstreams. Clusters in this context are groups of similar Upstream hosts. Each Upstream has a *type*, which determines how the Upstream is processed. Correctly configured Upstreams are converted into Envoy clusters that match their type. including information like cluster metadata.
 
-1. The next step in the translation cycle is to process all the functions on each Upstream. Functional plugins process the functions on an Upstream, setting function-specific cluster metadata, which will be later processed by function-specific Envoy filters.
+1. The next step in the translation cycle is to process all the functions on each Upstream. Function specific cluster metadata is added, which will be later processed by function-specific Envoy filters.
 
-1. The next step generates all of the *[Envoy routes](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto.html?highlight=route)* via the route plugins. Routes are generated for each route rule defined on the {{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Service objects">}}. When all of the routes are created, the translator aggregates them into *[Envoy virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-virtualhost)* and adds them to a new *[Envoy HTTP Connection Manager](https://www.envoyproxy.io/docs/envoy/v1.11.2/intro/arch_overview/http/http_connection_management.html#http-connection-management)* configuration.
+1. The next step generates all of the *[Envoy routes](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto.html?highlight=route)*. Routes are generated for each route rule defined on the {{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Service objects">}}. When all of the routes are created, the translator aggregates them into *[Envoy virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-virtualhost)* and adds them to a new *[Envoy HTTP Connection Manager](https://www.envoyproxy.io/docs/envoy/v1.11.2/intro/arch_overview/http/http_connection_management.html#http-connection-management)* configuration.
 
-1. Filter plugins are queried for their filter configurations, generating the list of HTTP Filters that will go on the *[Envoy listeners](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners)*.
+1. Filter plugins are queried for their filter configurations, generating the list of HTTP and TCP Filters that will go on the *[Envoy listeners](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners)*.
 
-1. Finally, a snapshot is composed of the all the valid endpoints, clusters, rds configs, and listeners. The snapshot will be passed to the *xDS Server*.
+1. Finally, a snapshot is composed of the all the valid endpoints (EDS), clusters (CDS), route configs (RDS), and listeners (LDS). The snapshot will be passed to the *xDS Server* where Envoy instances watching the xDS server can pull updated snapshots.
 
 ### Reporter
 
