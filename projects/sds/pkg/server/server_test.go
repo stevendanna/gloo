@@ -5,64 +5,64 @@ import (
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	"github.com/spf13/afero"
+	"google.golang.org/grpc"
+
 	"github.com/envoyproxy/go-control-plane/pkg/cache"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/afero"
-	"google.golang.org/grpc"
 )
 
 var _ = Describe("SDS Server", func() {
 
-	Context("GetSnapshotVersion", func() {
-		var fs afero.Fs
-		var dir string
-		var keyFile, certFile, caFile afero.File
-		var err error
+	var fs afero.Fs
+	var dir string
+	var keyFile, certFile, caFile afero.File
+	var err error
 
-		BeforeEach(func() {
-			fs = afero.NewOsFs()
-			dir, err = afero.TempDir(fs, "", "")
-			Expect(err).To(BeNil())
-			fileString := `test`
-			keyFile, err = afero.TempFile(fs, dir, "")
-			Expect(err).To(BeNil())
-			_, err = keyFile.WriteString(fileString)
-			Expect(err).To(BeNil())
-			certFile, err = afero.TempFile(fs, dir, "")
-			Expect(err).To(BeNil())
-			_, err = certFile.WriteString(fileString)
-			Expect(err).To(BeNil())
-			caFile, err = afero.TempFile(fs, dir, "")
-			Expect(err).To(BeNil())
-			_, err = caFile.WriteString(fileString)
-			Expect(err).To(BeNil())
-		})
+	BeforeEach(func() {
+		fs = afero.NewOsFs()
+		dir, err = afero.TempDir(fs, "", "")
+		Expect(err).To(BeNil())
+		fileString := `test`
+		keyFile, err = afero.TempFile(fs, dir, "")
+		Expect(err).To(BeNil())
+		_, err = keyFile.WriteString(fileString)
+		Expect(err).To(BeNil())
+		certFile, err = afero.TempFile(fs, dir, "")
+		Expect(err).To(BeNil())
+		_, err = certFile.WriteString(fileString)
+		Expect(err).To(BeNil())
+		caFile, err = afero.TempFile(fs, dir, "")
+		Expect(err).To(BeNil())
+		_, err = caFile.WriteString(fileString)
+		Expect(err).To(BeNil())
+	})
 
-		AfterEach(func() {
-			_ = fs.RemoveAll(dir)
-		})
-		It("correctly reads tls secrets from files to generate snapshot version", func() {
-			snapshotVersion, err := GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
-			Expect(err).To(BeNil())
-			Expect(snapshotVersion).To(Equal("8743884267787195433"))
+	AfterEach(func() {
+		_ = fs.RemoveAll(dir)
+	})
 
-			// Test that the snapshot version changes if the contents of the file changes
-			_, err = keyFile.WriteString(`newFileString`)
-			Expect(err).To(BeNil())
-			snapshotVersion, err = GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
-			Expect(err).To(BeNil())
-			Expect(snapshotVersion).To(Equal("6325137717375755640"))
-		})
+	It("correctly reads tls secrets from files to generate snapshot version", func() {
+		snapshotVersion, err := GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
+		Expect(err).To(BeNil())
+		Expect(snapshotVersion).To(Equal("8743884267787195433"))
 
-		It("correctly updates SDSConfig", func() {
-			ctx, _ := context.WithCancel(context.Background())
-			hasher := &EnvoyKey{}
-			snapshotCache := cache.NewSnapshotCache(false, hasher, nil)
-			UpdateSDSConfig(ctx, keyFile.Name(), certFile.Name(), caFile.Name(), snapshotCache)
-			_, err := snapshotCache.GetSnapshot(hasher.ID(nil))
-			Expect(err).To(BeNil())
-		})
+		// Test that the snapshot version changes if the contents of the file changes
+		_, err = keyFile.WriteString(`newFileString`)
+		Expect(err).To(BeNil())
+		snapshotVersion, err = GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
+		Expect(err).To(BeNil())
+		Expect(snapshotVersion).To(Equal("6325137717375755640"))
+	})
+
+	It("correctly updates SDSConfig", func() {
+		ctx, _ := context.WithCancel(context.Background())
+		hasher := &EnvoyKey{}
+		snapshotCache := cache.NewSnapshotCache(false, hasher, nil)
+		UpdateSDSConfig(ctx, keyFile.Name(), certFile.Name(), caFile.Name(), snapshotCache)
+		_, err := snapshotCache.GetSnapshot(hasher.ID(nil))
+		Expect(err).To(BeNil())
 	})
 
 	Context("Test gRPC Server", func() {
@@ -76,7 +76,7 @@ var _ = Describe("SDS Server", func() {
 			grpcServer, snapshotCache = SetupEnvoySDS()
 			err := RunSDSServer(ctx, grpcServer)
 			Expect(err).To(BeNil())
-			_ = snapshotCache
+			UpdateSDSConfig(ctx, keyFile.Name(), certFile.Name(), caFile.Name(), snapshotCache)
 		})
 
 		AfterEach(func() {
