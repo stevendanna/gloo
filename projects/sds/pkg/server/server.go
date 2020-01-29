@@ -28,12 +28,6 @@ var (
 	grpcOptions = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
 )
 
-type TlsInfo struct {
-	key  []byte
-	cert []byte
-	ca   []byte
-}
-
 type EnvoyKey struct{}
 
 func (h *EnvoyKey) ID(node *core.Node) string {
@@ -71,69 +65,57 @@ func RunSDSServer(ctx context.Context, grpcServer *grpc.Server) error {
 	return nil
 }
 
-func Sync(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile string, snapshotCache cache.SnapshotCache) error {
-	tls, err := ReadSecretsFromFiles(sslKeyFile, sslCertFile, sslCaFile)
-	if err != nil {
-		return err
-	}
-	err = UpdateSDSConfig(ctx, tls, snapshotCache)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func ReadSecretsFromFiles(sslKeyFile, sslCertFile, sslCaFile string) (TlsInfo, error) {
+func GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile string) (string, error) {
 	var err error
 	key, err := ioutil.ReadFile(sslKeyFile)
 	if err != nil {
-		return TlsInfo{}, err
+		return "", err
 	}
 	cert, err := ioutil.ReadFile(sslCertFile)
 	if err != nil {
-		return TlsInfo{}, err
+		return "", err
 	}
 	ca, err := ioutil.ReadFile(sslCaFile)
 	if err != nil {
-		return TlsInfo{}, err
+		return "", err
 	}
-	return TlsInfo{
-		key:  key,
-		cert: cert,
-		ca:   ca,
-	}, nil
+	hash := fnv.New64()
+	hash.Write(key)
+	hash.Write(cert)
+	hash.Write(ca)
+	snapshotVersion := fmt.Sprintf("%d", hash.Sum64())
+	return snapshotVersion, nil
 }
 
-func UpdateSDSConfig(ctx context.Context, tls TlsInfo, snapshotCache cache.SnapshotCache) error {
-	hash := fnv.New64()
-	hash.Write(tls.key)
-	hash.Write(tls.cert)
-	hash.Write(tls.ca)
-	snapshotVersion := fmt.Sprintf("%d", hash.Sum64())
-	contextutils.LoggerFrom(ctx).Debug(fmt.Sprintf("snapshot snapshotVersion is %s", snapshotVersion))
+func UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile string, snapshotCache cache.SnapshotCache) error {
+	snapshotVersion, err := GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile)
+	if err != nil {
+		return err
+	}
+	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("Updating SDS config. Snapshot version is %s", snapshotVersion))
 
 	items := []cache.Resource{
-		serverCertSecret(tls.cert, tls.key),
-		validationContextSecret(tls.ca),
+		serverCertSecret(sslCertFile, sslKeyFile),
+		validationContextSecret(sslCaFile),
 	}
 	secretSnapshot := cache.Snapshot{}
 	secretSnapshot.Resources[cache.Secret] = cache.NewResources(snapshotVersion, items)
 	return snapshotCache.SetSnapshot(sdsClient, secretSnapshot)
 }
 
-func serverCertSecret(cert, key []byte) cache.Resource {
+func serverCertSecret(certFile, keyFile string) cache.Resource {
 	return &auth.Secret{
 		Name: "server_cert",
 		Type: &auth.Secret_TlsCertificate{
 			TlsCertificate: &auth.TlsCertificate{
 				CertificateChain: &core.DataSource{
-					Specifier: &core.DataSource_InlineBytes{
-						InlineBytes: cert,
+					Specifier: &core.DataSource_Filename{
+						Filename: certFile,
 					},
 				},
 				PrivateKey: &core.DataSource{
-					Specifier: &core.DataSource_InlineBytes{
-						InlineBytes: key,
+					Specifier: &core.DataSource_Filename{
+						Filename: keyFile,
 					},
 				},
 			},
@@ -141,14 +123,14 @@ func serverCertSecret(cert, key []byte) cache.Resource {
 	}
 }
 
-func validationContextSecret(ca []byte) cache.Resource {
+func validationContextSecret(caFile string) cache.Resource {
 	return &auth.Secret{
 		Name: "validation_context",
 		Type: &auth.Secret_ValidationContext{
 			ValidationContext: &auth.CertificateValidationContext{
 				TrustedCa: &core.DataSource{
-					Specifier: &core.DataSource_InlineBytes{
-						InlineBytes: ca,
+					Specifier: &core.DataSource_Filename{
+						Filename: caFile,
 					},
 				},
 			},

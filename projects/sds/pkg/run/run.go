@@ -30,7 +30,7 @@ func Run(ctx context.Context) error {
 	}
 
 	// Initialize the SDS config
-	err = server.Sync(ctx, sslKeyFile, sslCertFile, sslCaFile, snapshotCache)
+	err = server.UpdateSDSConfig(ctx, sslKeyFile, sslCertFile, sslCaFile, snapshotCache)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func Run(ctx context.Context) error {
 			// watch for events
 			case event := <-watcher.Events:
 				contextutils.LoggerFrom(ctx).Info("received event: \n", event)
-				server.Sync(ctx, sslKeyFile, sslCertFile, sslCaFile, snapshotCache)
+				server.UpdateSDSConfig(ctx, sslKeyFile, sslCertFile, sslCaFile, snapshotCache)
 			// watch for errors
 			case err := <-watcher.Errors:
 				contextutils.LoggerFrom(ctx).Warn("Received error: \n", err)

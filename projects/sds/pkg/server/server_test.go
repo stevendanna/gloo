@@ -13,57 +13,53 @@ import (
 )
 
 var _ = Describe("SDS Server", func() {
-	var test = []byte("test")
-	tls := TlsInfo{
-		key:  test,
-		cert: test,
-		ca:   test,
-	}
 
-	Context("ReadSecretsFromFiles", func() {
+	Context("GetSnapshotVersion", func() {
 		var fs afero.Fs
 		var dir string
+		var keyFile, certFile, caFile afero.File
 		var err error
 
 		BeforeEach(func() {
 			fs = afero.NewOsFs()
 			dir, err = afero.TempDir(fs, "", "")
 			Expect(err).To(BeNil())
+			fileString := `test`
+			keyFile, err = afero.TempFile(fs, dir, "")
+			Expect(err).To(BeNil())
+			_, err = keyFile.WriteString(fileString)
+			Expect(err).To(BeNil())
+			certFile, err = afero.TempFile(fs, dir, "")
+			Expect(err).To(BeNil())
+			_, err = certFile.WriteString(fileString)
+			Expect(err).To(BeNil())
+			caFile, err = afero.TempFile(fs, dir, "")
+			Expect(err).To(BeNil())
+			_, err = caFile.WriteString(fileString)
+			Expect(err).To(BeNil())
 		})
 
 		AfterEach(func() {
 			_ = fs.RemoveAll(dir)
 		})
-		It("correctly reads tls secrets from files", func() {
-			fileString := `test`
-			keyFile, err := afero.TempFile(fs, dir, "")
+		It("correctly reads tls secrets from files to generate snapshot version", func() {
+			snapshotVersion, err := GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
 			Expect(err).To(BeNil())
-			_, err = keyFile.WriteString(fileString)
-			Expect(err).To(BeNil())
-			certFile, err := afero.TempFile(fs, dir, "")
-			Expect(err).To(BeNil())
-			_, err = certFile.WriteString(fileString)
-			Expect(err).To(BeNil())
-			caFile, err := afero.TempFile(fs, dir, "")
-			Expect(err).To(BeNil())
-			_, err = caFile.WriteString(fileString)
-			Expect(err).To(BeNil())
-			tls, err := ReadSecretsFromFiles(keyFile.Name(), certFile.Name(), caFile.Name())
-			Expect(err).To(BeNil())
-			Expect(tls).To(Equal(TlsInfo{
-				key:  test,
-				cert: []byte("test"),
-				ca:   []byte("test"),
-			}))
-		})
-	})
+			Expect(snapshotVersion).To(Equal("8743884267787195433"))
 
-	Context("UpdateSDSConfig", func() {
+			// Test that the snapshot version changes if the contents of the file changes
+			_, err = keyFile.WriteString(`newFileString`)
+			Expect(err).To(BeNil())
+			snapshotVersion, err = GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
+			Expect(err).To(BeNil())
+			Expect(snapshotVersion).To(Equal("6325137717375755640"))
+		})
+
 		It("correctly updates SDSConfig", func() {
 			ctx, _ := context.WithCancel(context.Background())
 			hasher := &EnvoyKey{}
 			snapshotCache := cache.NewSnapshotCache(false, hasher, nil)
-			UpdateSDSConfig(ctx, tls, snapshotCache)
+			UpdateSDSConfig(ctx, keyFile.Name(), certFile.Name(), caFile.Name(), snapshotCache)
 			_, err := snapshotCache.GetSnapshot(hasher.ID(nil))
 			Expect(err).To(BeNil())
 		})
@@ -80,8 +76,6 @@ var _ = Describe("SDS Server", func() {
 			grpcServer, snapshotCache = SetupEnvoySDS()
 			err := RunSDSServer(ctx, grpcServer)
 			Expect(err).To(BeNil())
-			//err = UpdateSDSConfig(ctx, tls, snapshotCache)
-			//Expect(err).To(BeNil())
 			_ = snapshotCache
 		})
 
