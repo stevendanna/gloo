@@ -41,6 +41,11 @@ func Run(ctx context.Context) error {
 		return err
 	}
 	defer watcher.Close()
+
+	// Wire in signal handling
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
 	go func() {
 		for {
 			select {
@@ -51,6 +56,8 @@ func Run(ctx context.Context) error {
 			// watch for errors
 			case err := <-watcher.Errors:
 				contextutils.LoggerFrom(ctx).Warn("Received error: \n", err)
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()
@@ -64,9 +71,6 @@ func Run(ctx context.Context) error {
 		return err
 	}
 
-	// Wire in signal handling
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	<-sigs
 	cancel()
 	return nil

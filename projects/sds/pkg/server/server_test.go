@@ -15,10 +15,12 @@ import (
 
 var _ = Describe("SDS Server", func() {
 
-	var fs afero.Fs
-	var dir string
-	var keyFile, certFile, caFile afero.File
-	var err error
+	var (
+		fs                        afero.Fs
+		dir                       string
+		keyFile, certFile, caFile afero.File
+		err                       error
+	)
 
 	BeforeEach(func() {
 		fs = afero.NewOsFs()
@@ -66,10 +68,12 @@ var _ = Describe("SDS Server", func() {
 	})
 
 	Context("Test gRPC Server", func() {
-		var ctx context.Context
-		var cancel context.CancelFunc
-		var grpcServer *grpc.Server
-		var snapshotCache cache.SnapshotCache
+		var (
+			ctx           context.Context
+			cancel        context.CancelFunc
+			grpcServer    *grpc.Server
+			snapshotCache cache.SnapshotCache
+		)
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
@@ -94,10 +98,7 @@ var _ = Describe("SDS Server", func() {
 
 			client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
 
-			resp, err := client.FetchSecrets(ctx, &envoy_api_v2.DiscoveryRequest{
-				VersionInfo: "",
-				Node:        nil,
-			})
+			resp, err := client.FetchSecrets(ctx, &envoy_api_v2.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			Expect(len(resp.GetResources())).To(Equal(2))
 		})

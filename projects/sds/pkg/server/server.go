@@ -8,6 +8,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/solo-io/go-utils/hashutils"
+
 	"github.com/solo-io/go-utils/contextutils"
 
 	"google.golang.org/grpc"
@@ -79,12 +81,8 @@ func GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile string) (string, erro
 	if err != nil {
 		return "", err
 	}
-	hash := fnv.New64()
-	hash.Write(key)
-	hash.Write(cert)
-	hash.Write(ca)
-	snapshotVersion := fmt.Sprintf("%d", hash.Sum64())
-	return snapshotVersion, nil
+	hash, err := hashutils.HashAllSafe(fnv.New64(), key, cert, ca)
+	return fmt.Sprintf("%d", hash), err
 }
 
 func UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile string, snapshotCache cache.SnapshotCache) error {
