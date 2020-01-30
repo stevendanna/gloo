@@ -29,7 +29,7 @@ type Global struct {
 	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
 	Wasm       Wasm        `json:"wasm,omitempty"`
 	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
-	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
+	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
 }
 
 type Namespace struct {
