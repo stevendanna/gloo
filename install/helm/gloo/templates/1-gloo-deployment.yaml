@@ -50,9 +50,9 @@ spec:
         image: "{{ $image.registry }}/gloo-envoy-wrapper:{{ $image.tag }}"
         imagePullPolicy: {{ $image.pullPolicy }}
         ports:
-          - containerPort: {{ .Values.gloo.deployment.xdsPort }}
-            name: grpc-xds
-            protocol: TCP
+        - containerPort: {{ .Values.gloo.deployment.xdsPort }}
+          name: grpc-xds
+          protocol: TCP
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
@@ -60,16 +60,16 @@ spec:
           periodSeconds: 2
           failureThreshold: 10
         volumeMounts:
-          - mountPath: /etc/envoy/ssl
-            name: gloo-mtls-certs
-           readOnly: true
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls-certs
+          readOnly: true
       - name: sds
         image: "{{ $image.registry }}/sds:{{ $image.tag }}"
         imagePullPolicy: {{ $image.pullPolicy }}
         volumeMounts:
-          - mountPath: /etc/envoy/ssl
-            name: gloo-mtls-certs
-            readOnly: true
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls-certs
+          readOnly: true
 {{- end }}
       - image: {{template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
