@@ -48,14 +48,14 @@ var _ = Describe("SDS Server", func() {
 	It("correctly reads tls secrets from files to generate snapshot version", func() {
 		snapshotVersion, err := GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
 		Expect(err).To(BeNil())
-		Expect(snapshotVersion).To(Equal("8743884267787195433"))
+		Expect(snapshotVersion).To(Equal("11240719828806193304"))
 
 		// Test that the snapshot version changes if the contents of the file changes
 		_, err = keyFile.WriteString(`newFileString`)
 		Expect(err).To(BeNil())
 		snapshotVersion, err = GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
 		Expect(err).To(BeNil())
-		Expect(snapshotVersion).To(Equal("6325137717375755640"))
+		Expect(snapshotVersion).To(Equal("15327026688369869607"))
 	})
 
 	It("correctly updates SDSConfig", func() {
