@@ -138,7 +138,7 @@ data:
                 - certificate_chain: { "filename": "/etc/envoy/ssl/tls.crt" }
                   private_key: { "filename": "/etc/envoy/ssl/tls.key" }
               validation_context:
-                trusted_ca: { "filename": "/etc/envoy/ssl/tls.crt" }
+                trusted_ca: { "filename": "/etc/envoy/ssl/ca.crt" }
 {{- end }}
         upstream_connection_options:
           tcp_keepalive: {}

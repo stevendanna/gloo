@@ -9,12 +9,14 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
-	sslKeyFile  = "/etc/envoy/ssl/tls.key"
-	sslCertFile = "/etc/envoy/ssl/tls.crt"
-	sslCaFile   = "/etc/envoy/ssl/tls.crt"
+	secretDir   = "/etc/envoy/ssl/"
+	sslKeyFile  = secretDir + v1.TLSPrivateKeyKey        // tls.key
+	sslCertFile = secretDir + v1.TLSCertKey              //tls.crt
+	sslCaFile   = secretDir + v1.ServiceAccountRootCAKey //ca.crt
 )
 
 func Run(ctx context.Context) error {
