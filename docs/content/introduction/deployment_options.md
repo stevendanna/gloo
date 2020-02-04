@@ -6,7 +6,7 @@ description: Infrastructure Options for Installing Gloo
 
 Gloo is a flexible architecture that can be deployed on a range of infrastructure stacks. If you'll recall from the Architecture document, Gloo contains the following components at a logical level.
 
-![Component Architecture]({{% versioned_link_path fromRoot="/introduction/component_architecture.png" %}})
+![Component Architecture]({{% versioned_link_path fromRoot="/img/component_architecture.png" %}})
 
 In an actual deployment of Gloo, components like storage, secrets, and endpoint discovery must be supplied by the infrastructure stack. Gloo also requires a place to launch the containers that comprise both Gloo and Envoy. The following sections detail potential deployment options along with links to the installation guide for each option.
 
@@ -127,3 +127,16 @@ Consul also supports service discovery, which is added to Gloo by publishing a K
 ### Secrets
 
 HashiCorp's Vault is secrets lifecycle management solution providing secure, tightly controlled access to tokens, passwords, certificates, and encryption keys.
+
+You can find out more about deploying Gloo using HashiCorp solutions by [following Gateway guides]({{% versioned_link_path fromRoot="/installation/gateway/" %}}).
+
+---
+
+## Next Steps
+
+Now that you have a basic understanding of the deployment options for Gloo, there are number of potential next steps that we'd like to recommend.
+
+* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo yourself or try one of our Katacoda courses.
+* **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/deployment_arch" %}})**: Learn about specific implementations of Gloo on different software stacks.
+* **[Concepts]({{% versioned_link_path fromRoot="/introduction/concepts/" %}})**: Learn more about the core concepts behind Gloo and how they interact.
+* **[Developer Guides]({{% versioned_link_path fromRoot="/dev/" %}})**: extend Gloo's functionality for your use case through various plugins.

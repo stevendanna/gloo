@@ -32,7 +32,7 @@ Gloo offers first-class API management features on all functions:
 
 In the most basic sense, Gloo is a translation engine and [Envoy xDS server](https://github.com/envoyproxy/data-plane-api/blob/master/xds_protocol.rst) providing advanced configuration for Envoy (including Gloo's custom Envoy filters). Gloo follows an event-based architecture, watching various sources of configuration for updates and responding immediately with v2 gRPC updates to Envoy.
 
-![Component Architecture]({{% versioned_link_path fromRoot="/introduction/component_architecture.png" %}})
+![Component Architecture]({{% versioned_link_path fromRoot="/img/component_architecture.png" %}})
 
 At the logical layer, Gloo is comprised of several different services that perform unique functions. Gloo sits outside the data path, providing the control layer for Envoy and other services through its transformation plug-in. 
 
@@ -64,6 +64,8 @@ The *Translator* receives snapshots of the entire state, composed of the followi
 
 The translator takes all of this information and initiates a new *translation loop* with the end goal of creating a new Envoy xDS Snapshot.
 
+![Component Architecture]({{% versioned_link_path fromRoot="/img/translation_loop.png" %}})
+
 1. The translation cycle starts by defining *[Envoy clusters](https://www.envoyproxy.io/docs/envoy/v1.8.0/api-v1/cluster_manager/cluster)* from all configured Upstreams. Clusters in this context are groups of similar Upstream hosts. Each Upstream has a *type*, which determines how the Upstream is processed. Correctly configured Upstreams are converted into Envoy clusters that match their type. including information like cluster metadata.
 
 1. The next step in the translation cycle is to process all the functions on each Upstream. Function specific cluster metadata is added, which will be later processed by function-specific Envoy filters.
@@ -88,7 +90,7 @@ The final snapshot is passed to the *xDS Server*, which notifies Envoy of a succ
 
 Gloo is supported by a suite of optional discovery services that automatically discover and configure Gloo with Upstreams and functions to simplify routing for users and self-service.
 
-![Discovery Architecture]({{% versioned_link_path fromRoot="/introduction/discovery_architecture.png" %}})
+![Discovery Architecture]({{% versioned_link_path fromRoot="/img/discovery-architecture.png" %}})
 
 Discovery services act as automated Gloo clients, automatically populating the storage layer with Upstreams and functions to facilitate easy routing for users. Discovery is optional, but when enabled, it will attempt to discover available Upstreams and functions.
 
