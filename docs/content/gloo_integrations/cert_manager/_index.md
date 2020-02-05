@@ -22,7 +22,7 @@ This document shows how to secure your ingress traffic using gloo and cert-manag
 
 In this example we used the domain name 'test.solo.io'. We've set an A record for this domain to resolve to the result of `minikube ip` so we can test with minikube.
 
-While you can update your aws dns settings through the AWS UI, I find performing changes through the command line faster. Update the dns record through the aws command line tool (remember to replace *HOSTED_ZONE* and *RECORD* with your values):
+While you can update your AWS DNS settings through the AWS UI, I find performing changes through the command line faster. Update the DNS record through the AWS command line tool (remember to replace *HOSTED_ZONE* and *RECORD* with your values):
 
 ```shell
 export INGRESS_HOST=$(kubectl get po -l istio=ingressgateway -n istio-system -o 'jsonpath={.items[0].status.hostIP}')
