@@ -7,6 +7,8 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
+import "google/protobuf/wrappers.proto";
+
 import "solo-kit/api/v1/metadata.proto";
 import "solo-kit/api/v1/status.proto";
 import "solo-kit/api/v1/solo-kit.proto";
@@ -167,8 +169,24 @@ message RouteTable {
     option (core.solo.io.resource).short_name = "rt";
     option (core.solo.io.resource).plural_name = "route_tables";
 
-    // the list of routes for the route table
+    // The list of routes for the route table
     repeated Route routes = 1;
+
+    // When a delegated route defines a `RouteTableSelector` that matches multiple route tables, Gloo will inspect this
+    // field to determine the order in which the route tables are to be evaluated. This determines the order in which
+    // the routes will appear on the final `Proxy` resource.
+    //
+    // If all the matching route tables specify a weight, Gloo will process them in ascending order by weight and
+    // collect the routes of each route table in the order they are defined.
+    //
+    // If none of the matched route tables specifies a weight, Gloo will process the tables in no particular order,
+    // but will sort the resulting routes to avoid short-circuiting (e.g. making sure `/foo/bar` comes before `/foo`).
+    //
+    // If only a subset of the matched route tables specifies weights, Gloo will first process that subset in ascending
+    // order by weight and then process the rest of the matched route tables in no specific order; in this case the
+    // resulting routes will NOT be sorted and Gloo will alert the user by adding a warning to the status of the parent
+    // resource (the one that specifies the `RouteTableSelector` that matches said tables).
+    google.protobuf.Int32Value weight = 2;
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
