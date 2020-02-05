@@ -3,22 +3,20 @@ title: Gloo and Istio mTLS
 weight: 3
 ---
 
-## Motivation
-
 Serving as the Ingress for an Istio cluster -- without compromising on security -- means supporting 
 mutual TLS communication between Gloo and the rest of the cluster. Mutual TLS means that the client 
 proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
 
-
 For this exercise, you will need Istio installed with mTLS enabled. This guide was tested with istio 1.0.6 and Istio 1.1. 
 
-This guide also assumes that you have Gloo installed. Gloo is installed to the `gloo-system` namespace
-and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does NOT exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more. 
+This guide also assumes that you have Gloo installed. Gloo is installed to the `gloo-system` namespace and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does NOT exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more. 
 
-To quickly install Gloo, download *glooctl* and run `glooctl install gateway`. See the 
-[quick start](../../../installation/gateway/kubernetes/) guide for more information.
+To quickly install Gloo, download *glooctl* and run `glooctl install gateway`. See the [quick start]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) guide for more information.
+
+---
 
 ## Istio 1.0.x
+
 For a quick install of Istio 1.0.6 on minikube with mTLS enabled, run the following commands:
 ```bash
 kubectl apply -f install/kubernetes/helm/istio/templates/crds.yaml
@@ -26,8 +24,7 @@ kubectl apply -f install/kubernetes/istio-demo-auth.yaml
 kubectl get pods -w -n istio-system
 ```
 
-Use `kubectl get pods -n istio-system` to check the status on the Istio pods and wait until all the 
-pods are **Running** or **Completed**.
+Use `kubectl get pods -n istio-system` to check the status on the Istio pods and wait until all the pods are **Running** or **Completed**.
 
 Install bookinfo sample app:
 
@@ -37,12 +34,10 @@ kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 ```
 
 ### Configure Gloo
-For Gloo to successfully send requests to an Istio upstream with mTLS enabled, we need to add
-the Istio mTLS secret to the gateway-proxy pod. The secret allows Gloo to authenticate with the 
-upstream service.
+For Gloo to successfully send requests to an Istio upstream with mTLS enabled, we need to add the Istio mTLS secret to the gateway-proxy pod. The secret allows Gloo to authenticate with the upstream service.
 
-Edit the pod, with the command `kubectl edit -n gloo-system deploy/gateway-proxy`, 
-and add istio certs volume and volume mounts. Here's an example of an edited deployment:
+Edit the pod, with the command `kubectl edit -n gloo-system deploy/gateway-proxy`, and add istio certs volume and volume mounts. Here's an example of an edited deployment:
+
 {{< highlight yaml "hl_lines=43-45 50-54" >}}
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -100,9 +95,7 @@ spec:
           secretName: istio.default
 {{< /highlight >}}
 
-The Gloo gateway will now have access to Istio client secrets. The last configuration step is to 
-configure the relevant Gloo upstreams with mTLS. We can be fine-grained about which upstreams have these settings as not all Gloo upstreams may need/want mTLS enabled. This gives us the flexibility to route to upstreams
-both with and without mTLS enabled - a common occurrence in a brown field environment or during a migration to Istio.
+The Gloo gateway will now have access to Istio client secrets. The last configuration step is to configure the relevant Gloo upstreams with mTLS. We can be fine-grained about which upstreams have these settings as not all Gloo upstreams may need/want mTLS enabled. This gives us the flexibility to route to upstreams both with and without mTLS enabled - a common occurrence in a brown field environment or during a migration to Istio.
 
 Let's edit the `productpage` upstream and tell Gloo to use the secrets that are now mounted into the Gloo Gateway and we configured in the previous step.
 
@@ -155,6 +148,8 @@ HTTP_GW=$(glooctl proxy url)
 ## Open the ingress url in the browser:
 $([ "$(uname -s)" = "Linux" ] && echo xdg-open || echo open) $HTTP_GW
 ```
+
+---
 
 ## Istio 1.1.x
 
@@ -303,6 +298,7 @@ And we can curl it:
 curl -v $(glooctl proxy url)/productpage
 ```
 
+---
 
 ## Changes for Istio 1.3.x
 
