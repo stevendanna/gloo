@@ -64,7 +64,7 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/p
 
 ### Configure access
 
-We'll need to allow cert manager access to configure dns records in aws. See cert manager [docs](https://docs.cert-manager.io/en/latest/tasks/acme/configuring-dns01/route53.html) for more details on the acceess requirements for cert-manager. Once you have configured access, we will need to add the access keys as a kubernetes secret, so that cert manager can access them:
+We'll need to allow cert manager access to configure DNS records in AWS. See cert manager [docs](https://docs.cert-manager.io/en/latest/tasks/acme/configuring-dns01/route53.html) for more details on the access requirements for cert-manager. Once you have configured access, we will need to add the access keys as a kubernetes secret, so that cert manager can access them:
 
 ```shell
 kubectl create secret generic us-east-1 -n cert-manager --from-literal=access_key_id=$ACCESS_KEY_ID --from-literal=secret_access_key=$SECRET_ACCESS_KEY
