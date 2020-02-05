@@ -14,17 +14,39 @@ When Gloo is installed on Kubernetes, it creates a number of Custom Resource Def
 
 | Name | Grouping | Purpose |
 |------|----------|---------|
-| {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" display="AuthConfig">}} | enterprise.gloo.solo.io | User-facing authentication configuration |
-| {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} | gloo.solo.io | A combination of Gateway resources to be parsed by Gloo pods. |
 | {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} | gloo.solo.io | Global settings for all Gloo containers. |
-| {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} | gloo.solo.io | Group multiple Upstreams and/or external endpoints to be referenced by Virtual Service(s). |
-| {{< protobuf name="gloo.solo.io.Upstream" display="Upstream">}} | gloo.solo.io | Upstreams represent destinations for routing requests. |
 | {{< protobuf name="gateway.solo.io.Gateway" display="Gateway">}} | gateway.solo.io | Describes a single Listener and the routing Upstreams reachable via the Gateway Proxy. |
+| {{< protobuf name="gateway.solo.io.VirtualService" display="VirtualService">}} | gateway.solo.io | Describes the set of routes to match for a set of domains with a destination of a Route Table, Upstream, or Upstream Group. |
 | {{< protobuf name="gateway.solo.io.RouteTable" display="RouteTable">}} | gateway.solo.io | Child Routing object for the Gloo Gateway. |
-| {{< protobuf name="gateway.solo.io.VirtualService" display="VirtualService">}} | gateway.solo.io | Describes the set of routes to match for a set of domains. |
+| {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} | gloo.solo.io | A combination of Gateway resources to be parsed by Gloo pods. |
+| {{< protobuf name="gloo.solo.io.Upstream" display="Upstream">}} | gloo.solo.io | Upstreams represent destinations for routing requests. |
+| {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} | gloo.solo.io | Group multiple Upstreams and/or external endpoints to be referenced by Virtual Service(s). |
+| {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" display="AuthConfig">}} | enterprise.gloo.solo.io | User-facing authentication configuration referenced by Virtual Service(s). |
 
-As a quick refresher, Gloo is deployed from several different container images. The Gateway image is responsible for acting as the API gateway and routing traffic to the appropriate Envoy Proxy. The Gloo image is the control plane for Gloo and runs the xDS server used to interact with the Envoy Proxy instances. The Discovery image performs service discovery of new services added to Kubernetes or another plugin.
+As a quick refresher, Gloo is deployed as pods from four different container images:
 
+* gateway
+* gloo
+* discovery
+* gateway-proxy/ingress-proxy
+
+The gateway, gloo, and discovery pods act as the control plane for Gloo. The data plane is handled by the gateway-proxy/ingress-proxy pods running Envoy.
+
+Gateway is responsible for:
+
+* Translating Gateway and Virtual Service Custom Resources into configuration & status on the Proxy CR
+* Validation webhooks hit the Gateway validation server to validate a configuration before application
+
+Gloo is responsible for:
+
+* Translating the Proxy CR into a cached Envoy config
+* Translating Upstreams, ConfigMaps, and Endpoints into a cached Envoy config
+* Serving cached Envoy configurations via xDS
+* Gloo validation server is hit by Gateway validation server to validate Proxy from Gloo's point of view
+
+Discovery is responsible for:
+
+* Discovering Upstreams in the cluster
 
 The next few sections detail different scenarios where a Custom Resource is used.
 
