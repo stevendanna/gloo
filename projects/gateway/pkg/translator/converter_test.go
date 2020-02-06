@@ -1,6 +1,7 @@
 package translator_test
 
 import (
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -598,6 +599,86 @@ var _ = Describe("Route converter", func() {
 					"[ns-1.rt-1] -> [ns-2.rt-2] -> [ns-3.rt-3] -> [ns-1.rt-1]",
 				),
 			)
+		})
+
+		Describe("route tables with weights", func() {
+
+			var (
+				rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b *v1.RouteTable
+			)
+
+			BeforeEach(func() {
+
+				// Matches rt1, rt2, rt3
+				vs = buildVirtualService(&v1.RouteTableSelector{
+					Namespaces: []string{"ns-1"},
+				})
+
+				// Matches rt1a, rt1b
+				rt1 = buildRouteTableWithDelegateAction("rt-1", "ns-1", "/foo/a", nil,
+					&v1.RouteTableSelector{
+						Namespaces: []string{"ns-2"},
+					},
+				)
+				rt1.Weight = &types.Int32Value{Value: 20}
+
+				// Same weight as rt1
+				rt2 = buildRouteTableWithSimpleAction("rt-2", "ns-1", "/foo/b", nil)
+				rt2.Weight = &types.Int32Value{Value: 20}
+
+				// Matches rt3a, rt3b
+				rt3 = buildRouteTableWithDelegateAction("rt-3", "ns-1", "/foo/c", nil,
+					&v1.RouteTableSelector{
+						Namespaces: []string{"ns-3"},
+					},
+				)
+				rt3.Weight = &types.Int32Value{Value: -10}
+
+				// No weight
+				rt1a = buildRouteTableWithSimpleAction("rt-1-a", "ns-2", "/foo/a/1", nil)
+				// No weight
+				rt1b = buildRouteTableWithSimpleAction("rt-1-b", "ns-2", "/foo/a/1/2", nil)
+
+				// No weight
+				rt3a = buildRouteTableWithSimpleAction("rt-3-a", "ns-3", "/foo/c/1", nil)
+
+				rt3b = buildRouteTableWithSimpleAction("rt-3-b", "ns-3", "/foo/c/2", nil)
+				rt3b.Weight = &types.Int32Value{Value: 0}
+
+				allRouteTables = v1.RouteTableList{rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b}
+			})
+
+			It("works as expected", func() {
+				converted, err := visitor.ConvertVirtualService(vs)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(5))
+
+				Expect(converted[0]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/c/2")))
+				Expect(converted[1]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/c/1")))
+				Expect(converted[2]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/b")))
+				Expect(converted[3]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/a/1/2")))
+				Expect(converted[4]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/a/1")))
+
+				By("virtual service contains a warning about two child route tables with the same weight", func() {
+					_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
+					Expect(vsReport).NotTo(BeNil())
+					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings).To(ConsistOf(
+						translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt1, rt2}, 20).Error(),
+					))
+				})
+
+				By("route table 3 contains a warning about chile tables with and without weights", func() {
+					_, vsReport := reports.Find("*v1.RouteTable", rt3.Metadata.Ref())
+					Expect(vsReport).NotTo(BeNil())
+					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings).To(ConsistOf(
+						translator.WithAndWithoutWeightErr(v1.RouteTableList{rt3b}, v1.RouteTableList{rt3a}).Error(),
+					))
+				})
+
+			})
 		})
 	})
 })
