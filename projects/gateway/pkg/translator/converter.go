@@ -96,29 +96,21 @@ type routeInfo struct {
 
 func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error) {
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
-	return rv.visitAndReorder(wrapper)
+	return rv.visit(wrapper, nil, nil)
 }
 
 func (rv *routeVisitor) ConvertRouteTable(routeTable *gatewayv1.RouteTable) ([]*gloov1.Route, error) {
 	wrapper := &visitableRouteTable{RouteTable: routeTable}
-	return rv.visitAndReorder(wrapper)
-}
-
-func (rv *routeVisitor) visitAndReorder(resource resourceWithRoutes) ([]*gloov1.Route, error) {
-	routes, err := rv.visit(resource, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	glooutils.SortRoutesByPath(routes)
-
-	return routes, nil
+	return rv.visit(wrapper, nil, nil)
 }
 
 // Performs a depth-first, in-order traversal of a route tree rooted at the given resource.
 // The additional arguments are used to store the state of the traversal of the current branch of the route tree.
 func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInfo, visitedRouteTables gatewayv1.RouteTableList) ([]*gloov1.Route, error) {
-	var routes []*gloov1.Route
+	var (
+		routes           []*gloov1.Route
+		shouldSortRoutes bool
+	)
 
 	for _, gatewayRoute := range resource.GetRoutes() {
 
@@ -153,6 +145,22 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			if err != nil {
 				rv.reports.AddWarning(resource.InputResource(), err.Error())
 				continue
+			}
+
+			// If the route delegates to than one route table, try to sort the matching route tables
+			if len(routeTables) > 1 {
+				haveBeenSorted, errs := NewRouteTableSorter().Sort(routeTables)
+				for _, err := range errs {
+					// `errs` indicates potential issues with the sorting result, so we just warn
+					rv.reports.AddWarning(resource.InputResource(), err.Error())
+				}
+
+				// If we were not able to sort the route tables (because the user did not specify any weights),
+				// we want to try and sort the resulting routes in order to protect against short-circuiting.
+				// E.g. we want to avoid `/foo` coming before `/foo/bar`.
+				if !haveBeenSorted {
+					shouldSortRoutes = true
+				}
 			}
 
 			for _, routeTable := range routeTables {
@@ -204,6 +212,10 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			// should never happen
 			return nil, err
 		}
+	}
+
+	if shouldSortRoutes {
+		glooutils.SortRoutesByPath(routes)
 	}
 
 	return routes, nil
