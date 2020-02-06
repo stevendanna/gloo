@@ -41,10 +41,11 @@ type RouteConverter interface {
 	ConvertRouteTable(virtualService *gatewayv1.RouteTable) ([]*gloov1.Route, error)
 }
 
-func NewRouteConverter(selector RouteTableSelector, reports reporter.ResourceReports) RouteConverter {
+func NewRouteConverter(selector RouteTableSelector, sorter RouteTableSorter, reports reporter.ResourceReports) RouteConverter {
 	return &routeVisitor{
 		reports:            reports,
 		routeTableSelector: selector,
+		routeTableSorter:   sorter,
 	}
 }
 
@@ -80,6 +81,8 @@ type routeVisitor struct {
 	reports reporter.ResourceReports
 	// Used to select route tables for delegated routes.
 	routeTableSelector RouteTableSelector
+	// Used to sort route tables when multiple ones are matched by a selector.
+	routeTableSorter RouteTableSorter
 }
 
 // Helper object used to store information about previously visited routes.
@@ -147,9 +150,9 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 				continue
 			}
 
-			// If the route delegates to than one route table, try to sort the matching route tables
+			// If the route delegates to more than one route table, try to sort the matching route tables.
 			if len(routeTables) > 1 {
-				haveBeenSorted, errs := NewRouteTableSorter().Sort(routeTables)
+				haveBeenSorted, errs := rv.routeTableSorter.Sort(routeTables)
 				for _, err := range errs {
 					// `errs` indicates potential issues with the sorting result, so we just warn
 					rv.reports.AddWarning(resource.InputResource(), err.Error())

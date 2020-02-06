@@ -19,7 +19,7 @@ var _ = Describe("Route converter", func() {
 
 	DescribeTable("should reject bad config on a delegate route",
 		func(route *v1.Route, expectedErr error) {
-			rv := translator.NewRouteConverter(nil, reporter.ResourceReports{})
+			rv := translator.NewRouteConverter(nil, nil, reporter.ResourceReports{})
 			_, err := rv.ConvertVirtualService(
 				&v1.VirtualService{
 					VirtualHost: &v1.VirtualHost{
@@ -193,7 +193,11 @@ var _ = Describe("Route converter", func() {
 				},
 			}
 
-			rv := translator.NewRouteConverter(translator.NewRouteTableSelector(v1.RouteTableList{&rt}), rpt)
+			rv := translator.NewRouteConverter(
+				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
+				translator.NewRouteTableSorter(),
+				rpt,
+			)
 			converted, err := rv.ConvertVirtualService(vs)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
@@ -241,7 +245,11 @@ var _ = Describe("Route converter", func() {
 				},
 			}
 
-			rv := translator.NewRouteConverter(translator.NewRouteTableSelector(v1.RouteTableList{&rt}), rpt)
+			rv := translator.NewRouteConverter(
+				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
+				translator.NewRouteTableSorter(),
+				rpt,
+			)
 			converted, err := rv.ConvertVirtualService(vs)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -292,7 +300,11 @@ var _ = Describe("Route converter", func() {
 				},
 			}
 
-			rv := translator.NewRouteConverter(translator.NewRouteTableSelector(v1.RouteTableList{&rt}), rpt)
+			rv := translator.NewRouteConverter(
+				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
+				translator.NewRouteTableSorter(),
+				rpt,
+			)
 			converted, err := rv.ConvertVirtualService(vs)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -349,7 +361,11 @@ var _ = Describe("Route converter", func() {
 				},
 			}
 
-			rv := translator.NewRouteConverter(translator.NewRouteTableSelector(v1.RouteTableList{&rt}), rpt)
+			rv := translator.NewRouteConverter(
+				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
+				translator.NewRouteTableSorter(),
+				rpt,
+			)
 			converted, err := rv.ConvertVirtualService(vs)
 			Expect(err).NotTo(HaveOccurred())
 			expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/invalid").Error()
@@ -402,7 +418,11 @@ var _ = Describe("Route converter", func() {
 
 		JustBeforeEach(func() {
 			reports = reporter.ResourceReports{}
-			visitor = translator.NewRouteConverter(translator.NewRouteTableSelector(allRouteTables), reports)
+			visitor = translator.NewRouteConverter(
+				translator.NewRouteTableSelector(allRouteTables),
+				translator.NewRouteTableSorter(),
+				reports,
+			)
 		})
 
 		Describe("merged route ordering", func() {
