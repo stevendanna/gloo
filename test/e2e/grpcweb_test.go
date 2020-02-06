@@ -16,7 +16,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -29,11 +28,13 @@ var _ = Describe("Grpc Web", func() {
 		tc                TestContext
 		baseAccessLogPort = uint32(37000)
 		accessLogPort     uint32
+		envoyPort         uint32
 	)
 
 	Describe("in memory", func() {
 
 		BeforeEach(func() {
+			envoyPort = 8081
 			tc.What = services.What{
 				DisableGateway: false,
 				DisableFds:     true,
@@ -106,7 +107,7 @@ var _ = Describe("Grpc Web", func() {
 					vs := getTrivialVirtualServiceForUpstream("gloo-system", grpcUpstream.Metadata.Ref())
 					_, err = tc.TestClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
-					v1helpers.ExpectGrpcHealthOK(nil, defaults.HttpPort, "AccessLog")
+					v1helpers.ExpectGrpcHealthOK(nil, envoyPort, "AccessLog")
 				})
 
 				It("works with grpc web", func() {
@@ -145,7 +146,7 @@ var _ = Describe("Grpc Web", func() {
 					var bufferbase64 bytes.Buffer
 					bufferbase64.Write(dest)
 
-					req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v2.AccessLogService/StreamAccessLogs", defaults.HttpPort), &bufferbase64)
+					req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v2.AccessLogService/StreamAccessLogs", envoyPort), &bufferbase64)
 					Expect(err).NotTo(HaveOccurred())
 
 					req.Header.Set("content-type", "application/grpc-web-text")

@@ -56,7 +56,7 @@ var _ = Describe("Transformations", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
-		envoyPort = services.NextBindPort()
+		envoyPort = 8081
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
@@ -92,12 +92,9 @@ var _ = Describe("Transformations", func() {
 		cancel()
 	})
 
-	ExpectSuccess := func() {
-
+	expectSuccess := func() {
 		body := []byte("{\"body\":\"test\"}")
-
 		client := &http.Client{Timeout: time.Second}
-
 		Eventually(func() (string, error) {
 			// send a request with a body
 			var buf bytes.Buffer
@@ -112,11 +109,10 @@ var _ = Describe("Transformations", func() {
 			}
 			b, err := ioutil.ReadAll(res.Body)
 			return string(b), err
-		}, "20s", ".5s").Should(Equal("test"))
+		}, "5s", ".5s").Should(Equal("test"))
 	}
 
-	WriteVhost := func(vs *gloov1.VirtualHost) {
-		proxycli := testClients.ProxyClient
+	writeProxyWithVhost := func(vs *gloov1.VirtualHost) {
 		proxy := &gloov1.Proxy{
 			Metadata: core.Metadata{
 				Name:      "proxy",
@@ -124,7 +120,7 @@ var _ = Describe("Transformations", func() {
 			},
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
-				BindAddress: "127.0.0.1",
+				BindAddress: "0.0.0.0",
 				BindPort:    envoyPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
@@ -134,12 +130,12 @@ var _ = Describe("Transformations", func() {
 			}},
 		}
 
-		_, err := proxycli.Write(proxy, opts)
+		_, err := testClients.ProxyClient.Write(proxy, opts)
 		Expect(err).NotTo(HaveOccurred())
 	}
 
 	It("should should transform json to html response on vhost", func() {
-		WriteVhost(&gloov1.VirtualHost{
+		writeProxyWithVhost(&gloov1.VirtualHost{
 			Options: &gloov1.VirtualHostOptions{
 				Transformations: transform,
 			},
@@ -160,11 +156,11 @@ var _ = Describe("Transformations", func() {
 			}},
 		})
 
-		ExpectSuccess()
+		expectSuccess()
 	})
 
 	It("should should transform json to html response on route", func() {
-		WriteVhost(&gloov1.VirtualHost{
+		writeProxyWithVhost(&gloov1.VirtualHost{
 			Name:    "virt1",
 			Domains: []string{"*"},
 			Routes: []*gloov1.Route{{
@@ -185,11 +181,11 @@ var _ = Describe("Transformations", func() {
 			}},
 		})
 
-		ExpectSuccess()
+		expectSuccess()
 	})
 
 	It("should should transform json to html response on route", func() {
-		WriteVhost(&gloov1.VirtualHost{
+		writeProxyWithVhost(&gloov1.VirtualHost{
 			Name:    "virt1",
 			Domains: []string{"*"},
 			Routes: []*gloov1.Route{{
@@ -218,7 +214,7 @@ var _ = Describe("Transformations", func() {
 			}},
 		})
 
-		ExpectSuccess()
+		expectSuccess()
 	})
 
 })

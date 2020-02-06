@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix e2e test gRPC flake by hard-coding the envoy port instead of using default http port which was being
+      rewritten during tests.
+    issueLink: https://github.com/solo-io/gloo/issues/2245

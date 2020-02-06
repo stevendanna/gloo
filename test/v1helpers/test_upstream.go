@@ -283,5 +283,5 @@ func ExpectGrpcHealthOK(rootca *string, envoyPort uint32, service string) {
 			return fmt.Errorf("%v is not SERVING", resp.GetStatus())
 		}
 		return nil
-	}, "30s", "1s").Should(BeNil())
+	}, "5s", "1s").Should(BeNil())
 }
